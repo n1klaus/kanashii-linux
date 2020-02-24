@@ -296,7 +296,7 @@ build_target() {
 			shadow pcre grep mksh bash libtool gdbm db expat libressl nettle ca-certificates sqlite libffi \
 			python python-setuptools perl autoconf automake xz lzip lz4 zstd libarchive lzo kmod libuargp libelf busybox coreutils \
 			mawk hostname dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
-			make patch nano libcap-ng util-linux e2fsprogs btrfs-progs dosfstools libseccomp hwids gperf ninja meson systemd dbus popt rsync \
+			make patch nano libcap-ng util-linux e2fsprogs btrfs-progs dosfstools hwids gperf ninja meson systemd dbus popt rsync \
 			wireless_tools wpa_supplicant gptfdisk wget keyring libssh2 c-ares libev nghttp2 curl lua rpm neko $LINUX"
 	fi
 
