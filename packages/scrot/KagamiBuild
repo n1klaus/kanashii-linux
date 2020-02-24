@@ -1,0 +1,20 @@
+# Description: Simple command-line screenshot utility for X
+# URL:         https://tracker.debian.org/pkg/scrot
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  autoconf-archive giblib
+# Section:     x11
+
+name=scrot
+version=1.2
+release=1
+source=("http://ftp.debian.org/debian/pool/main/s/$name/${name}_${version}.orig.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -fiv
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man
+	make
+	make DESTDIR="$PKG" docsdir=/usr/share/doc/scrot install
+}

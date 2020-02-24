@@ -1,0 +1,36 @@
+# Description: A secure, fast, compliant and very flexible web-server
+# URL:         https://www.lighttpd.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pcre e2fsprogs lua libxml2 sqlite gdbm
+# Section:     httpd
+
+name=lighttpd
+version=1.4.55
+release=1
+backup=('etc/lighttpd/lighttpd.conf'
+	'etc/logrotate.d/lighttpd')
+source=("https://download.lighttpd.net/lighttpd/releases-1.4.x/lighttpd-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib/lighttpd \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc/lighttpd \
+		--with-attr \
+		--with-gdbm \
+		--with-openssl \
+		--with-lua
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+
+	install -d -m700 -o http -g http "$PKG"/var/{log,cache}/lighttpd
+
+	install -D -m644 "$STUFF"/lighttpd/logrotate "$PKG"/etc/logrotate.d/lighttpd
+	install -D -m644 "$STUFF"/lighttpd/conf "$PKG"/etc/lighttpd/lighttpd.conf
+	install -Dm644 "$STUFF"/tmpfiles/lighttpd "$PKG"/usr/lib/tmpfiles.d/lighttpd.conf
+	install -Dm644 "$STUFF"/svc/lighttpd.service "$PKG"/usr/lib/systemd/system/lighttpd.service
+}

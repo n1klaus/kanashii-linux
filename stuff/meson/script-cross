@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+exec meson setup \
+	--cross-file uncom \
+	--prefix        /usr \
+	--libdir        lib \
+	--libexecdir    lib \
+	--sbindir       bin \
+	--wrap-mode     nodownload \
+	-Dbuildtype=plain \
+	"$@"

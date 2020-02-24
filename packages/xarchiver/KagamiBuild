@@ -1,0 +1,24 @@
+# Description: GTK+ frontend to various command line archivers
+# URL:         https://github.com/ib/xarchiver
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gtk3
+# Section:     utils
+
+name=xarchiver
+version=0.5.4.14
+release=2
+options=('~makeflags')
+source=("https://github.com/ib/xarchiver/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/xfce4 \
+		--disable-doc
+	make -j1
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/xarchiver/xarchiver.appdata.xml "$PKG"/usr/share/metainfo/xarchiver.appdata.xml
+}

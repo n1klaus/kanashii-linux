@@ -1,0 +1,15 @@
+# Description: Abstract library implementation of a VT220/xterm/ECMA-48 terminal emulator
+# URL:         http://www.leonerd.org.uk/code/libtermkey
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libvterm
+version=f8ab54cf592b945caaaf2bc397c0da6fc8fb949b
+release=1
+source=("https://github.com/neovim/libvterm/archive/$version.zip")
+
+build() {
+	cd "$SRC"/$name-$version
+	make PREFIX=/usr
+	make PREFIX=/usr DESTDIR="$PKG" install
+}

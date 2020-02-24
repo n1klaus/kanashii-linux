@@ -1,0 +1,28 @@
+# Description: A text-based email client
+# URL:         http://alpine.x10host.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses pam libressl
+# Section:     mail
+
+name=alpine
+version=2.21
+release=1
+source=("http://alpine.x10host.com/alpine/release/src/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/alpine/uclibc-musl.patch
+	autoreconf -fi
+
+	LIBS="-lcrypto" \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-passfile=.pine-passfile \
+		--with-ssl-dir=/usr \
+		--without-ldap \
+		--without-krb5 \
+		--without-tcl
+	make
+	make DESTDIR="$PKG" install
+}

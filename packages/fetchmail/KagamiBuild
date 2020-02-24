@@ -1,0 +1,29 @@
+# Description: A remote-mail retrieval utility
+# URL:         http://www.fetchmail.info
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python libressl
+# Section:     mail
+
+name=fetchmail
+version=6.4.1
+release=1
+source=("http://downloads.sourceforge.net/project/$name/branch_6.4/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	PYTHON=python3 \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-ssl=/usr \
+		--disable-nls
+	make
+	make DESTDIR="$PKG" install
+}

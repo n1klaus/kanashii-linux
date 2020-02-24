@@ -1,0 +1,21 @@
+# Description: Fast and lightweight IDE
+# URL:         https://www.geany.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool python gtk3
+# Section:     x11
+
+name=geany
+version=1.36
+release=3
+source=("https://download.geany.org/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-gtk3
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

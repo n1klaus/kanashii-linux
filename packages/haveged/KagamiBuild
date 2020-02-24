@@ -1,0 +1,21 @@
+# Description: Entropy harvesting daemon using CPU timings
+# URL:         https://github.com/jirka-h/haveged/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     admin
+
+name=haveged
+version=1.9.8
+release=1
+source=("https://github.com/jirka-h/haveged/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+
+	install -D -m0644 init.d/service.fedora "$PKG"/usr/lib/systemd/system/haveged.service
+}

@@ -1,0 +1,38 @@
+# Description: Lightweight X11 Display Manager
+# URL:         https://lxde.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam intltool xorg-server gtk2 systemd
+# Section:     x11
+
+name=lxdm
+version=0.5.3
+release=6
+source=("https://downloads.sourceforge.net/lxde/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/lxdm/execinfo.patch
+	patch -Np1 -i "$STUFF"/lxdm/fix-msghdr-usage.patch
+
+	install -Dm644 "$STUFF"/pam.d/lxdm pam/lxdm
+	sed -i 's:/etc/xprofile:/etc/profile:g' data/Xsession
+
+	libtoolize --force && aclocal && autoheader && autoconf \
+		&& automake --add-missing
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/lxdm \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-pam \
+		--disable-gtk3
+	make
+	make DESTDIR="$PKG" install
+
+	chmod 644 "$PKG"/etc/lxdm/lxdm.conf
+
+	install -Dm644 "$STUFF"/svc/lxdm.service "$PKG"/usr/lib/systemd/system/lxdm.service
+	install -Dm644 "$STUFF"/tmpfiles/lxdm "$PKG"/usr/lib/tmpfiles.d/lxdm.conf
+}

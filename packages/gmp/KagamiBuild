@@ -1,0 +1,20 @@
+# Description: A free library for arbitrary precision arithmetic
+# URL:         https://gmplib.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     libs
+
+name=gmp
+version=6.2.0
+release=1
+options=('bootstrap')
+source=("https://gmplib.org/download/gmp/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-cxx
+	make
+	make DESTDIR="$PKG" install
+}

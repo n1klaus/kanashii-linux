@@ -1,0 +1,21 @@
+# Description: X11 Video Motion Compensation extension library
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxv
+# Section:     x11
+
+name=libxvmc
+version=1.0.12
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/lib/libXvMC-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/libXvMC-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

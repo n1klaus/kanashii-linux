@@ -1,0 +1,156 @@
+# Description: Filesystem layout and configuration files
+# URL:         https://ataraxialinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=base-files
+version=0.5
+release=1
+options=('bootstrap')
+backup=('etc/fstab'
+	'etc/group'
+	'etc/gshadow'
+	'etc/host.conf'
+	'etc/hosts'
+	'etc/issue'
+	'etc/issue.net'
+	'etc/motd'
+	'etc/passwd'
+	'etc/profile'
+	'etc/resolv.conf'
+	'etc/securetty'
+	'etc/shadow'
+	'etc/shells')
+OSRELEASE="1"
+
+build() {
+	cd "$PKG"
+
+	for d in boot dev etc/{skel,profile.d,modprobe.d,sysctl.d,conf.d} home media/{cdrom,flash,usbdisk,floppy,zip} mnt usr var opt srv/http run; do
+		install -d -m755 $d
+	done
+
+	install -d -m555 proc
+	install -d -m555 sys
+	install -d -m0750 home/root
+	install -d -m1777 tmp
+	install -d -m555 -g 11 srv/ftp
+
+	ln -sf home/root root
+
+	ln -sf ../proc/mounts etc/mtab
+
+	echo "Ataraxia Linux $OSRELEASE" >> etc/ataraxia-release
+	ln -sf ataraxia-release etc/system-release
+
+	for f in fstab group host.conf hosts issue issue.net motd passwd profile resolv.conf securetty shells; do
+		install -m644 "$STUFF"/base-files/$f etc/
+	done
+
+	for f in gshadow shadow crypttab; do
+		install -m600 "$STUFF"/base-files/$f etc/
+	done
+
+	for d in cache local opt log/old lib/misc empty spool/mail spool/cron/crontabs; do
+		install -d -m755 var/$d
+	done
+
+	install -d -m1777 var/{tmp,spool/mail}
+
+	install -d -m775 -g 50 var/games
+	ln -sf spool/mail var/mail
+	ln -sf ../run var/run
+	ln -sf ../run/lock var/lock
+
+	for d in bin games include lib/{modules,firmware} share/misc src; do
+		install -d -m755 usr/$d
+	done
+
+	ln -sf usr/bin bin
+	ln -sf usr/bin sbin
+	ln -sf bin usr/sbin
+	ln -sf usr/lib lib
+
+	for d in bin etc games include lib man sbin share src; do
+		install -d -m755 usr/local/$d
+	done
+
+	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
+	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
+
+	cat > "$PKG"/etc/os-release <<- EOF
+		NAME="Ataraxia Linux"
+		VERSION="$OSRELEASE"
+		ID="ataraxialinux ataraxia januslinux janus"
+		ID_LIKE="ataraxia"
+		VERSION_ID="$OSRELEASE"
+		PRETTY_NAME="Ataraxia Linux $OSRELEASE"
+		HOME_URL="https://ataraxialinux.github.io/"
+		BUG_REPORT_URL="https://github.com/ataraxialinux/ataraxia/issues"
+	EOF
+
+	if [ "$EMBEDDED" = "1" ]; then
+		cat << EOF > "$PKG"/etc/bootscript.sh
+#!/bin/sh
+mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev     || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mkdir -p /dev/pts /dev/shm
+mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+
+if [ -x /bin/udevd ]; then
+	udevd --daemon
+	udevadm trigger --action=add --type=subsystems
+	udevadm trigger --action=add --type=devices
+	udevadm trigger --action=change --type=devices
+	udevadm settle
+fi
+
+mount -o remount,ro /
+
+if grep -wq rw /proc/cmdline ; then
+	mount -o remount,rw /
+fi
+
+mount -a -t nonfs,nonfs4,nosmbfs,nocifs -O no_netdev  &>/dev/null
+swapon -a
+
+hwclock -u -s
+
+ifconfig lo up
+
+[ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+cat /dev/null > /run/utmp
+
+dmesg > /var/log/dmesg.log
+chmod 600 /var/log/dmesg.log
+EOF
+
+		cat << EOF > "$PKG"/init
+#!/bin/sh
+exec /sbin/init
+EOF
+
+		cat << EOF > "$PKG"/etc/inittab
+::sysinit:/etc/bootscript.sh
+::restart:/sbin/init
+::shutdown:sync
+::shutdown:swapoff -a
+::shutdown:umount -a -r
+::shutdown:sleep 1
+::ctrlaltdel:/sbin/reboot
+::respawn:/bin/cttyhack /bin/mksh
+EOF
+
+		chmod +x "$PKG"/etc/bootscript.sh "$PKG"/init
+	fi
+
+	install -Dm0755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
+	install -Dm0755 "$STUFF"/base-files/espdiff "$PKG"/usr/games/espdiff
+	install -Dm0755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
+}

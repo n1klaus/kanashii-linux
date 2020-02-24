@@ -1,0 +1,43 @@
+# Description: Linux kernel packet control tool
+# URL:         http://www.netfilter.org/projects/iptables/index.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libnftnl libnfnetlink libnetfilter_conntrack libpcap
+# Priority:    required
+# Section:     net
+
+name=iptables
+version=1.8.4
+release=1
+backup=('etc/ethertypes'
+	'etc/iptables/iptables.rules'
+	'etc/iptables/ip6tables.rules')
+options=('bootstrap')
+source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/iptables/musl.patch
+	rm include/linux/types.h
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--enable-bpf-compiler \
+		--enable-devel \
+		--enable-libipq \
+		--enable-nfsynproxy \
+		--enable-shared
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/etc/iptables
+	touch "$PKG"/etc/iptables/iptables.rules "$PKG"/etc/iptables/ip6tables.rules
+
+	install -Dm755 "$STUFF"/iptables/flush "$PKG"/usr/lib/systemd/scripts/iptables-flush
+	install -Dm644 "$STUFF"/svc/iptables.service "$PKG"/usr/lib/systemd/system/iptables.service
+	install -Dm644 "$STUFF"/svc/ip6tables.service "$PKG"/usr/lib/systemd/system/ip6tables.service
+}

@@ -1,0 +1,22 @@
+# Description: GLib bindings for the Telepathy D-Bus protocol
+# URL:         https://telepathy.freedesktop.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gobject-introspection vala dbus-glib libxslt
+# Section:     gnome
+
+name=telepathy-glib
+version=0.24.1
+release=1
+source=("https://telepathy.freedesktop.org/releases/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/telepathy-glib/busybox-diff.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/telepathy \
+		--enable-vala-bindings
+	make
+	make DESTDIR="$PKG" install
+}

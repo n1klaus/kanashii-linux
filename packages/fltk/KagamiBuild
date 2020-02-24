@@ -1,0 +1,28 @@
+# Description: Graphical user interface toolkit for X
+# URL:         https://www.fltk.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja libxcursor libxft libxinerama hicolor-icon-theme libjpeg-turbo libpng
+# Section:     x11
+
+name=fltk
+version=1.3.5
+release=2
+source=("https://github.com/fltk/fltk/archive/release-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-release-$version
+	patch -Np1 -i "$STUFF"/fltk/fix-lib-mess.patch
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-release-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DOPTION_BUILD_SHARED_LIBS=ON \
+		-DOPTION_BUILD_HTML_DOCUMENTATION=OFF \
+		-DOPTION_CREATE_LINKS=ON \
+		-Wno-dev
+	make
+	make DESTDIR="$PKG" install
+}

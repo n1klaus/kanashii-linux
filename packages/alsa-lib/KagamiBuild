@@ -1,0 +1,21 @@
+# Description: An alternative implementation of Linux sound support
+# URL:         http://www.alsa-project.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     sound
+
+name=alsa-lib
+version=1.2.2
+release=1
+source=("ftp://ftp.alsa-project.org/pub/lib/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	cp "$STUFF"/config.guess config.guess
+	cp "$STUFF"/config.sub config.sub
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-debug
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,59 @@
+# Description: A lightweight display manager
+# URL:         https://www.freedesktop.org/wiki/Software/LightDM/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool yelp-tools gobject-introspection vala libx11 libxcb libxdmcp libxklavier libgcrypt accountsservice
+# Section:     x11
+
+name=lightdm
+version=1.30.0
+release=4
+backup=('etc/lightdm/keys.conf'
+	'etc/lightdm/lightdm.conf'
+	'etc/lightdm/users.conf'
+	'etc/lightdm/Xsession'
+	'etc/pam.d/lightdm'
+	'etc/pam.d/lightdm-autologin'
+	'etc/pam.d/lightdm-greeter')
+source=("https://github.com/CanonicalLtd/lightdm/releases/download/$version/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/lightdm/musl-language.patch
+	patch -Np1 -i "$STUFF"/lightdm/musl-is-linux.patch
+	patch -Np1 -i "$STUFF"/lightdm/musl-updwtmpx.patch
+	patch -Np1 -i "$STUFF"/lightdm/defaults.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/lightdm \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-greeter-user=lightdm \
+		--with-greeter-session=lightdm-gtk-greeter \
+		--disable-gtk-doc \
+		--disable-liblightdm-qt \
+		--disable-liblightdm-qt5 \
+		--disable-tests
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/lightdm/Xsession "$PKG"/etc/lightdm/Xsession
+	ln -sf /etc/lightdm/Xsession "$PKG"/usr/bin/lightdm-session
+
+	rm -rf "$PKG"/etc/init
+	rm -rf "$PKG"/etc/apparmor.d
+
+	mv "$PKG"/{etc,usr/share}/dbus-1/system.d
+	rmdir "$PKG"/etc/dbus-1
+
+	for pam in lightdm lightdm-autologin; do
+		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
+	done
+
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
+	install -m644 "$STUFF"/lightdm/lightdm.rules "$PKG"/usr/share/polkit-1/rules.d/lightdm.rules
+
+	install -Dm644 "$STUFF"/svc/lightdm.service "$PKG"/usr/lib/systemd/system/lightdm.service
+	install -Dm644 "$STUFF"/tmpfiles/lightdm "$PKG"/usr/lib/tmpfiles.d/lightdm.conf
+}

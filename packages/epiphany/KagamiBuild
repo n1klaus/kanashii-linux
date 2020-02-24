@@ -1,0 +1,28 @@
+# Description: A GNOME web browser based on the WebKit rendering engine
+# URL:         https://wiki.gnome.org/Apps/Web
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson yelp-tools appstream-glib webkitgtk gnome-desktop gcr iso-codes json-glib libnotify libdazzle libhandy
+# Section:     web
+
+name=epiphany
+version=3.34.4
+case $version in
+	*.*.*.*) _v=${version%.*}
+		_v=${_v%.*};;
+	*.*.*) _v=${version%.*};;
+esac
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${_v}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/epiphany/libre.patch
+	patch -Np1 -i "$STUFF"/epiphany/icon.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddistributor_name="Ataraxia Linux"
+	ninja
+	DESTDIR="$PKG" ninja install
+}

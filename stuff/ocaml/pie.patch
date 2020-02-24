@@ -1,0 +1,22 @@
+diff -ruN ocaml-4.08.0-orig/asmcomp/emitaux.ml ocaml-4.08.0/asmcomp/emitaux.ml
+--- ocaml-4.08.0-orig/asmcomp/emitaux.ml	2019-06-13 16:32:52.000000000 +0300
++++ ocaml-4.08.0/asmcomp/emitaux.ml	2019-06-14 12:50:53.694083785 +0300
+@@ -213,6 +213,7 @@
+     | None -> a.efa_word 0
+     end
+   in
++  a.efa_align Arch.size_addr;
+   a.efa_word (List.length !frame_descriptors);
+   List.iter emit_frame !frame_descriptors;
+   Label_table.iter emit_debuginfo debuginfos;
+diff -ruN ocaml-4.08.0-orig/runtime/power.S ocaml-4.08.0/runtime/power.S
+--- ocaml-4.08.0-orig/runtime/power.S	2019-06-13 16:32:52.000000000 +0300
++++ ocaml-4.08.0/runtime/power.S	2019-06-14 12:50:04.417259789 +0300
+@@ -646,6 +646,7 @@
+ /* Frame table */
+ 
+         .section ".data"
++	.align  wordalign
+         .globl  caml_system__frametable
+         .type   caml_system__frametable, @object
+ caml_system__frametable:

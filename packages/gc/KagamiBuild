@@ -1,0 +1,23 @@
+# Description: A garbage collector for C and C++
+# URL:         http://www.hboehm.info/gc/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libatomic_ops
+# Section:     devel
+
+name=gc
+version=8.0.4
+release=1
+source=("https://github.com/ivmai/bdwgc/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-cplusplus \
+		--enable-threads=posix \
+		--disable-static
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

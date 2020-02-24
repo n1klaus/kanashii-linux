@@ -1,0 +1,22 @@
+# Description: Lightweight SSH server
+# URL:         https://matt.ucc.asn.au/dropbear/dropbear.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+# Section:     net
+
+name=dropbear
+version=2019.78
+release=1
+source=("https://matt.ucc.asn.au/$name/releases/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin
+	make PROGRAMS='dbclient dropbear dropbearconvert dropbearkey'
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/svc/dropbear.service "$PKG"/usr/lib/systemd/system/dropbear.service
+}

@@ -1,0 +1,28 @@
+# Description: Anonymizing overlay network
+# URL:         https://www.torproject.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libressl libevent
+# Section:     net
+
+name=tor
+version=0.4.2.6
+release=1
+backup=('etc/tor/torrc')
+source=("https://dist.torproject.org/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-pic \
+		--disable-seccomp
+	make
+	make DESTDIR="$PKG" install
+
+	mv "$PKG"/etc/tor/torrc.sample "$PKG"/etc/tor/torrc
+	install -Dm644 "$STUFF"/tmpfiles/tor "$PKG"/usr/lib/tmpfiles.d/tor.conf
+	install -Dm644 "$STUFF"/svc/tor.service "$PKG"/usr/lib/systemd/system/tor.service
+	install -Dm644 "$STUFF"/svc/tor_at.service "$PKG"/usr/lib/systemd/system/tor@.service
+}

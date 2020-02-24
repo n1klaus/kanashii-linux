@@ -1,0 +1,20 @@
+# Description: C library that performs DNS requests and name resolves asynchronously
+# URL:         https://c-ares.haxx.se/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     libs
+
+name=c-ares
+version=1.15.0
+release=1
+options=('bootstrap')
+source=("https://c-ares.haxx.se/download/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+}

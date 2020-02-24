@@ -1,0 +1,62 @@
+# Description: Network connection manager and user applications
+# URL:         https://wiki.gnome.org/Projects/NetworkManager
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson systemd dbus-glib libndp libpsl libteam modemmanager curl gobject-introspection iptables jansson newt nss polkit pygobject vala lpppd iwd mobile-broadband-provider-info
+# Section:     net
+
+name=networkmanager
+version=1.22.8
+release=2
+backup=('etc/NetworkManager/NetworkManager.conf')
+source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
+
+build() {
+	cd "$SRC"/NetworkManager-$version
+	patch -Np1 -i "$STUFF"/networkmanager/musl.patch
+
+	sed '/initrd/d' -i src/meson.build
+	grep -rl '^#!.*python$' | xargs sed -i '1s/python/&3/'
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/NetworkManager-$version \
+		-Ddbus_conf_dir=/usr/share/dbus-1/system.d \
+		-Ddnsmasq=/usr/bin/dnsmasq \
+		-Ddocs=false \
+		-Diptables=/usr/bin/iptables \
+		-Diwd=true \
+		-Djson_validation=false \
+		-Dlibaudit=no \
+		-Dlibnm_glib=true \
+		-Dmodify_system=true \
+		-Dnmtui=true \
+		-Dovs=false \
+		-Dpolkit_agent=true \
+		-Dpppd=/usr/bin/pppd \
+		-Dqt=false \
+		-Dselinux=false \
+		-Dsession_tracking=systemd \
+		-Dsystemdsystemunitdir=/usr/lib/systemd/system \
+		-Dsuspend_resume=systemd \
+		-Dteamdctl=true \
+		-Dtests=no \
+		-Dudev_dir=/usr/lib/udev \
+		-Dvapi=true
+	ninja
+	DESTDIR="$PKG" ninja install
+
+cat > "$PKG"/etc/NetworkManager/NetworkManager.conf << "EOF"
+[main]
+plugins=keyfile
+auth-polkit=true
+EOF
+
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
+cat > "$PKG"/usr/share/polkit-1/rules.d/org.freedesktop.NetworkManager.rules << "EOF"
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.isInGroup("netdev")) {
+        return polkit.Result.YES;
+    }
+});
+EOF
+}

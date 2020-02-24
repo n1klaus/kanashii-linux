@@ -1,0 +1,32 @@
+# Description: POSIX 1003.1e capabilities
+# URL:         http://sites.google.com/site/fullycapable/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam attr
+# Priority:    required
+# Section:     security
+
+name=libcap
+version=2.32
+release=1
+options=('bootstrap')
+source=("https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
+	sed -i 's/CFLAGS :=/CFLAGS +=/g' Make.Rules
+	sed -i 's/LDFLAGS :=/LDFLAGS +=/g' Make.Rules
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes GOLANG=no
+		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes GOLANG=no prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
+	else
+		make CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include PAM_CAP=yes GOLANG=no
+		make CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include PAM_CAP=yes GOLANG=no prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
+	fi
+
+	install -Dm644 pam_cap/capability.conf "$PKG"/etc/security/capability.conf
+
+	chmod 755 "$PKG"/usr/lib/libcap.so.${version}
+}

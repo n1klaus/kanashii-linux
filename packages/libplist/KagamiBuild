@@ -1,0 +1,20 @@
+# Description: A library to handle Apple Property List format whereas it's binary or XML
+# URL:         http://libimobiledevice.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libplist
+version=2.0.0
+release=1
+source=("https://www.libimobiledevice.org/downloads/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-cython
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

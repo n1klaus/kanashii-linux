@@ -1,0 +1,56 @@
+# Description: Logical Volume Manager 2 utilities
+# URL:         https://sourceware.org/lvm2/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  systemd libaio
+# Section:     admin
+
+name=lvm2
+version=2.02.186
+release=1
+backup=('etc/lvm/lvm.conf'
+	'etc/lvm/lvmlocal.conf')
+source=("http://www.sourceware.org/pub/lvm2/LVM2.${version}.tgz")
+
+build() {
+	cd "$SRC"/LVM2.${version}
+	patch -Np1 -i "$STUFF"/lvm2/fix-stdio-usage.patch
+	patch -Np1 -i "$STUFF"/lvm2/mallinfo.patch
+	patch -Np1 -i "$STUFF"/lvm2/mlockall-default-config.patch
+	patch -Np1 -i "$STUFF"/lvm2/missing.patch
+
+	cp "$STUFF"/config.guess autoconf/config.guess
+	cp "$STUFF"/config.sub autoconf/config.sub
+
+	export ac_cv_func_malloc_0_nonnull=yes
+	export ac_cv_func_realloc_0_nonnull=yes
+	unset SOURCES
+
+	bash configure $TOOLFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-default-dm-run-dir=/run \
+		--with-default-locking-dir=/run/lock/lvm \
+		--with-default-pid-dir=/run \
+		--with-default-run-dir=/run/lvm \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
+		--with-cache=internal \
+		--with-thin=internal \
+		--enable-applib \
+		--enable-cmdlib \
+		--enable-dmeventd \
+		--enable-lvmetad \
+		--enable-pkgconfig \
+		--enable-udev_rules \
+		--enable-udev_sync \
+		--enable-udev-systemd-background-jobs \
+		--disable-readline
+	make SHELL=/bin/bash
+	make -j1 SHELL=/bin/bash DESTDIR="$PKG" install
+
+	install -d "$PKG"/etc/lvm/{archive,backup}
+
+	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
+	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
+}

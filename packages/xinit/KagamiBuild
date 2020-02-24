@@ -1,0 +1,20 @@
+# Description: X.Org initialisation program
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  util-macros libx11 xorg-apps
+# Section:     x11
+
+name=xinit
+version=1.4.1
+release=1
+options=("~emptydirs")
+source=("https://xorg.freedesktop.org/releases/individual/app/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-xinitdir=/etc/X11/xinit
+	make
+	make DESTDIR="$PKG" install
+}

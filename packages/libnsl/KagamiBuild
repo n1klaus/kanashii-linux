@@ -1,0 +1,19 @@
+# Description: Public client interface library for NIS(YP) and NIS+
+# URL:         https://github.com/thkukuk/libnsl
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libtirpc
+# Section:     libs
+
+name=libnsl
+version=1.2.0
+release=1
+source=("https://github.com/thkukuk/libnsl/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

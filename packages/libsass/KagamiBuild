@@ -1,0 +1,21 @@
+# Description: C implementation of Sass CSS preprocessor (library)
+# URL:         http://libsass.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libsass
+version=3.6.1
+release=1
+source=("https://github.com/sass/libsass/archive/$version/$name-$version.tar.gz")
+
+build() {
+	export LIBSASS_VERSION="$version"
+
+	cd "$SRC"/$name-$version
+	autoreconf -fi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

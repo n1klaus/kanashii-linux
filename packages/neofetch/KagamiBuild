@@ -1,0 +1,15 @@
+# Description: A CLI system information tool written in BASH that supports displaying images
+# URL:         https://github.com/dylanaraps/neofetch
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  bash
+# Section:     misc
+
+name=neofetch
+version=6.1.0
+release=1
+source=("https://github.com/dylanaraps/neofetch/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,13 @@
+name=host-bc
+version=2.5.3
+release=1
+options=('bootstrap')
+source=("https://github.com/gavinhoward/bc/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/bc-$version
+	PREFIX='' ./configure.sh \
+		--disable-nls
+	make PREFIX=''
+	make PREFIX='' DESTDIR="$TOOLS" install
+}

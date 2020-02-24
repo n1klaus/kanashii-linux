@@ -1,0 +1,25 @@
+# Description: A desktop news aggregator for online news feeds and weblogs
+# URL:         https://lzone.de/liferea
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection webkitgtk pygobject libpeas
+# Section:     utils
+
+name=liferea
+version=1.12.7
+release=1
+options=('~emptydirs')
+source=("https://github.com/lwindolf/liferea/archive/v$version.tar.gz")
+
+build() {
+	export WEBKIT_DISABLE_COMPOSITING_MODE=1
+
+	cd "$SRC"/$name-$version
+	NCONFIGURE=1 ./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-schemas-compile
+	make
+	make DESTDIR="$PKG" install
+}

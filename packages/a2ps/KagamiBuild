@@ -1,0 +1,46 @@
+# Description: An Any to PostScript filter
+# URL:         http://www.gnu.org/software/a2ps/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gperf psutils cups
+# Section:     text
+
+name=a2ps
+version=4.14
+release=1
+backup=('etc/a2ps/a2ps.cfg'
+	'etc/a2ps/a2ps-site.cfg')
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.13c-fnmatch-replacement.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.13c-emacs.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.13-manpage-chmod.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.14-check-mempcpy.patch
+	patch -p0 -i "$STUFF"/a2ps/a2ps-4.14-fix-stpcpy-proto.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-texinfo5.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.13-security.patch
+	patch -p1 -i "$STUFF"/a2ps/fix-redeclarations.patch
+
+	autoconf
+	sed -i -e "s/GPERF --version |/& head -n 1 |/" \
+		-e "s|/usr/local/share|/usr/share|" configure
+	sed -i -e 's/__mempcpy/mempcpy/g' lib/strftime.c src/regex.c
+
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc/a2ps \
+		--includedir=/usr/include \
+		--with-medium=letter \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+}

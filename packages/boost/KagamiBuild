@@ -1,0 +1,49 @@
+# Description: Free peer-reviewed portable C++ source libraries - development headers
+# URL:         http://www.boost.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 xz zstd python icu
+# Section:     libs
+
+name=boost
+version=1.72.0
+boostver=${version//./_}
+release=1
+source=("https://dl.bintray.com/boostorg/release/$version/source/${name}_${boostver}.tar.bz2")
+
+build() {
+	sus=$(python3 --version | awk '{print $2}')
+
+	cd "$SRC"/${name}_${boostver}
+	./bootstrap.sh \
+		--prefix="$PKG"/usr \
+		--with-icu \
+		--with-python=python3 \
+		--with-toolset=gcc
+
+	./b2 stage \
+		variant=release \
+		debug-symbols=off \
+		toolset=gcc \
+		threading=multi \
+		link=shared,static \
+		runtime-link=shared \
+		python=${sus%.*} \
+		cflags="${CFLAGS} -fPIC -O3" \
+		cxxflags="${CXXFLAGS} -std=c++14 -fPIC -O3" \
+		--layout=system \
+		-j$(nproc)
+	./b2 install \
+		variant=release \
+		debug-symbols=off \
+		toolset=gcc \
+		threading=multi \
+		link=shared,static \
+		runtime-link=shared \
+		python=${sus%.*} \
+		cflags="${CFLAGS} -fPIC -O3" \
+		cxxflags="${CXXFLAGS} -std=c++14 -fPIC -O3" \
+		--layout=system \
+		-j$(nproc)
+
+	ln -sf detail/sha1.hpp "$PKG"/usr/include/boost/uuid/sha1.hpp
+}

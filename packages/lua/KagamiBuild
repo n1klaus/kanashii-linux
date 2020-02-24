@@ -1,0 +1,36 @@
+# Description: Powerful lightweight programming language designed for extending applications
+# URL:         http://www.lua.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline
+# Priority:    required
+# Section:     interpreters
+
+name=lua
+version=5.3.5
+majorver=${version%.*}
+release=1
+options=('~emptydirs' 'bootstrap')
+source=("http://www.lua.org/ftp/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -p1 -i "$STUFF"/lua/shared.patch
+	sed "s/%VER%/$majorver/g;s/%REL%/$version/g" "$STUFF"/lua/lua.pc > lua.pc
+	sed "s/^R= \$V.4/R= \$V.5/" -i Makefile
+	make MYCFLAGS="$CFLAGS -fPIC -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" CC=${CC:-cc} linux
+	make \
+		TO_LIB="liblua.a liblua.so liblua.so.$majorver liblua.so.$version" \
+		INSTALL_DATA='cp -d' \
+		INSTALL_TOP="$PKG"/usr \
+		INSTALL_MAN="$PKG"/usr/share/man/man1 \
+		install
+
+	chmod -v u+w "$PKG"/usr/share/man/man1/lua.1
+
+	ln -sf lua "$PKG"/usr/bin/lua${version:0:3}
+	ln -sf luac "$PKG"/usr/bin/luac${version:0:3}
+	ln -sf liblua.so.$version "$PKG"/usr/lib/liblua${version:0:3}.so
+
+	install -m644 -D lua.pc "$PKG"/usr/lib/pkgconfig/lua53.pc
+	ln -sf lua53.pc "$PKG"/usr/lib/pkgconfig/lua.pc
+}

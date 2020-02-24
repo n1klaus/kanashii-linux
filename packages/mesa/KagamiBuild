@@ -1,0 +1,77 @@
+# Description: An open-source implementation of the OpenGL specification
+# URL:         https://www.mesa3d.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libelf llvm python-mako xorgproto wayland-protocols libx11 libxdamage libxrandr libxshmfence libxvmc libxxf86vm libdrm libva libvdpau libglvnd lm_sensors
+# Section:     x11
+
+name=mesa
+version=20.0.0
+release=1
+source=("https://mesa.freedesktop.org/archive/$name-$version.tar.xz")
+
+build() {
+	case $BARCH in
+		x86_64|i586)
+			gallium="r300,r600,radeonsi,svga,swrast,nouveau,virgl,etnaviv"
+			dri="i915,i965,r100,r200,nouveau"
+			vulkan="intel,amd"
+			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			;;
+		ppc64le|ppc64|ppc|riscv64|riscv32)
+			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,etnaviv"
+			dri="r100,r200,nouveau"
+			vulkan="amd"
+			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			;;
+		arch64)
+			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,kmsro"
+			dri="r100,r200,nouveau"
+			vulkan="amd,freedreno"
+			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			;;
+		armv7hnl|armv7hl|armv5tel)
+			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,kmsro"
+			dri="nouveau"
+			vulkan="freedreno"
+			opts="-Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			;;
+		*)
+			gallium="swrast,virgl"
+			dri=""
+			vulkan=""
+			opts="-Dgallium-nine=false -Dgallium-va=false -Dgallium-vdpau=false -Dgallium-xa=false -Dgallium-xvmc=false"
+			;;
+	esac
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/mesa/glx-tls.patch
+	patch -Np1 -i "$STUFF"/mesa/includes.patch
+	patch -Np1 -i "$STUFF"/mesa/0001-musl.patch
+
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version $opts \
+		-Db_lto=false \
+		-Ddri-drivers="$dri" \
+		-Degl=true \
+		-Delf-use-tls=false \
+		-Dgallium-drivers="$gallium" \
+		-Dgbm=true \
+		-Dgles1=true \
+		-Dgles2=true \
+		-Dglvnd=true \
+		-Dglx=dri \
+		-Dllvm=true \
+		-Dlmsensors=true \
+		-Dosmesa=gallium \
+		-Dplatforms=x11,drm,wayland,surfaceless \
+		-Dshared-glapi=true \
+		-Dshared-llvm=true \
+		-Dvalgrind=false \
+		-Dvulkan-drivers="$vulkan"
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	ln -sf libGLX_mesa.so.0 "$PKG"/usr/lib/libGLX_indirect.so.0
+}

@@ -1,0 +1,24 @@
+# Description: FREE version of the SSL/TLS protocol forked from OpenSSL
+# URL:         http://www.libressl.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=libressl
+version=3.0.2
+release=2
+options=('bootstrap')
+source=("https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -fi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-openssldir=/etc/ssl
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

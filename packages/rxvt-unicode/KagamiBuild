@@ -1,0 +1,21 @@
+# Description: Unicode enabled rxvt-clone terminal emulator (urxvt)
+# URL:         http://software.schmorp.de/pkg/rxvt-unicode.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl libnsl libxft startup-notification
+# Section:     x11
+
+name=rxvt-unicode
+version=9.22
+release=1
+source=("http://dist.schmorp.de/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/rxvt-unicode/musl.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-everything
+	make
+	make DESTDIR="$PKG" install
+}

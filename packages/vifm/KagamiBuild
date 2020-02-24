@@ -1,0 +1,23 @@
+# Description: A file manager with curses interface, which provides Vi[m]-like environment
+# URL:         https://vifm.info/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses
+# Section:     utils
+
+name=vifm
+version=0.10.1
+release=1
+source=("http://prdownloads.sourceforge.net/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/mkdir/mkdir -p/g' src/Makefile*
+	sed -i 's/mkdir -p -p/mkdir -p/g' src/Makefile*
+	autoreconf -vif
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}

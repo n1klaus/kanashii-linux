@@ -1,0 +1,25 @@
+# Description: File type identification utility
+# URL:         https://www.darwinsys.com/file/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+# Priority:    required
+# Section:     base
+
+name=file
+version=5.38
+release=1
+options=('bootstrap')
+source=("ftp://ftp.astron.com/pub/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--datadir=/usr/share/file \
+		--enable-fsect-man5 \
+		--disable-libseccomp
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,22 @@
+# Description: resolv.conf management framework (resolvconf)
+# URL:         https://roy.marples.name/projects/openresolv
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  systemd
+# Section:     net
+
+name=openresolv
+version=3.10.0
+release=1
+backup=('etc/resolvconf.conf')
+source=("https://github.com/rsmarples/openresolv/archive/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/resolvconf \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}

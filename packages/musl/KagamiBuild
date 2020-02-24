@@ -1,0 +1,47 @@
+# Description: The standard C library
+# URL:         http://www.musl-libc.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Provides:    rtld(GNU_HASH) glibc
+# Priority:    required
+# Section:     base
+
+name=musl
+version=1.2.0
+release=1
+options=('~strip' 'bootstrap')
+
+if [ "$BARCH" = "riscv32" ]; then
+	source=("https://github.com/riscv/riscv-musl/archive/develop.tar.gz")
+	musldir="riscv-musl-develop"
+else
+	source=("http://www.musl-libc.org/releases/$name-$version.tar.gz")
+	musldir="$name-$version"
+fi
+
+
+build() {
+	cd "$SRC"/$musldir
+	${CROSS_COMPILE}cc $CFLAGS -c "$STUFF"/musl/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
+	${CROSS_COMPILE}ar r libssp_nonshared.a __stack_chk_fail_local.o
+
+	./configure $TOOLFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--syslibdir=/usr/lib \
+		--enable-optimize=size
+	make
+	make DESTDIR="$PKG" install
+
+	cp libssp_nonshared.a "$PKG"/usr/lib
+
+	mkdir -p "$PKG"/usr/bin
+	ln -sf ../lib/libc.so "$PKG"/usr/bin/ldd
+
+cat > "$PKG"/usr/bin/ldconfig << "EOF"
+#!/bin/sh
+echo "adjusting libs..."
+true
+EOF
+
+	chmod +x "$PKG"/usr/bin/ldconfig
+}

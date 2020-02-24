@@ -1,0 +1,19 @@
+# Description: Open h.265 video codec implementation
+# URL:         https://github.com/strukturag/libde265
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     video
+
+name=libde265
+version=1.0.5
+release=1
+source=("https://github.com/strukturag/libde265/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-dec265 \
+		--disable-sherlock265
+	make
+	make DESTDIR="$PKG" install
+}

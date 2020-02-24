@@ -1,0 +1,19 @@
+# Description: Zstandard - Fast real-time compression algorithm
+# URL:         http://www.zstd.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib xz lz4
+# Priority:    required
+# Section:     base
+
+name=zstd
+version=1.4.4
+release=1
+options=('bootstrap')
+source=("https://github.com/facebook/zstd/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	unset CPPFLAGS
+	make HAVE_PTHREAD=1 HAVE_ZLIB=1 HAVE_LZMA=1 HAVE_LZ4=1 MOREFLAGS="-O3"
+	make PREFIX=/usr DESTDIR="$PKG" install
+}

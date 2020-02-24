@@ -1,0 +1,19 @@
+# Description: Library for reading, mastering and writing optical discs
+# URL:         https://dev.lovelyhq.com/libburnia
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libburn
+version=1.5.2.pl01
+release=1
+options=('~emptydirs')
+source=("http://files.libburnia-project.org/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-${version/.pl01/}
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,33 @@
+# Description: A system-independent interface for user-level packet capture
+# URL:         http://www.tcpdump.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  flex libnl
+# Priority:    required
+# Section:     libs
+
+name=libpcap
+version=1.9.1
+release=1
+options=('bootstrap')
+source=("https://www.tcpdump.org/release/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libpcap/includes.patch
+
+	CFLAGS="$CFLAGS -I${srcdir}/include $(${CROSS_COMPILE}pkg-config libnl-genl-3.0 --cflags)" \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-libnl \
+		--with-pcap=linux \
+		--enable-ipv6 \
+		--disable-bluetooth \
+		--disable-dbus \
+		--disable-usb
+	make
+	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/include/net
+	cd "$PKG"/usr/include/net
+	ln -sf ../pcap-bpf.h bpf.h
+}

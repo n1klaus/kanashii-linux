@@ -1,0 +1,27 @@
+# Description: A program that allows you to encrypt arbitrary TCP connections inside SSL
+# URL:         https://www.stunnel.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl systemd libnsl
+# Section:     net
+
+name=stunnel
+version=5.56
+release=1
+source=("https://www.stunnel.org/downloads/archive/5.x/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/stunnel/stunnel-5.54-libressl.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-ipv6 \
+		--disable-libwrap
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/tmpfiles/stunnel "$PKG"/usr/lib/tmpfiles.d/stunnel.conf
+	install -Dm644 tools/stunnel.service "$PKG"/usr/lib/systemd/system/stunnel.service
+}

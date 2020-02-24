@@ -1,0 +1,34 @@
+# Description: Linux man pages
+# URL:         http://man7.org/linux/man-pages/index.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     doc
+
+name=man-pages
+version=5.05
+release=1
+options=('bootstrap')
+source=("https://www.kernel.org/pub/linux/docs/man-pages/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make prefix="$PKG/usr" install
+
+	cd "$PKG"/usr/share/man
+	rm -f man1/install.1
+	rm -f man1/who.1
+	rm -f man1/what.1
+	rm -f man1/find.1
+	rm -f man1/pr.1
+	rm -f man4/mouse.4
+	rm -f man5/attr.5
+	rm -f man4/lirc.4
+	rm -f man7/{keyrings.7,persistent-keyring.7,process-keyring.7,session-keyring.7,thread-keyring.7,user-keyring.7,user-session-keyring.7,man.7}
+	rm -f man5/tzfile.5 man8/{tzselect,zdump,zic}.8
+	rm -f man1/{chgrp,chmod,chown,cp,dir,dd}.1
+	rm -f man1/{df,dircolors,du,install,ln,ls}.1
+	rm -f man1/{mkdir,mkfifo,mknod,mv,rm,rmdir}.1
+	rm -f man1/{touch,vdir}.1
+	rm -f man5/passwd.5
+	rm -f man3/getspnam.3
+}

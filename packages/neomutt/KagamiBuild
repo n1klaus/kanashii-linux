@@ -1,0 +1,26 @@
+# Description: A version of mutt with added features
+# URL:         https://neomutt.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  tcl ncurses gdbm libressl libidn gpgme
+# Section:     mail
+
+name=neomutt
+version=20191207
+release=1
+source=("https://github.com/neomutt/neomutt/archive/$version.tar.gz")
+
+build() {
+	export CFLAGS="-D_FILE_OFFSET_BITS=64 -DLARGEFILE_SOURCE=1 $CFLAGS"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--disable-doc \
+		--gpgme \
+		--gdbm \
+		--ssl
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,2 @@
+version=${version//+/.}
+pattern="dialog-\K[\d.-]+(?=.tgz)"

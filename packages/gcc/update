@@ -1,0 +1,3 @@
+version=${version%.*}
+site="https://gcc.gnu.org/releases.html"
+pattern="GCC \K[\d.]+(?=\<)"

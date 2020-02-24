@@ -1,0 +1,26 @@
+# Description: System Utilities Based on Sysfs
+# URL:         http://linux-diag.sourceforge.net/Sysfsutils.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     utils
+
+name=sysfsutils
+version=2.1.0
+release=1
+source=("https://downloads.sourceforge.net/sourceforge/linux-diag/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man
+	make
+	make DESTDIR="$PKG" install
+}

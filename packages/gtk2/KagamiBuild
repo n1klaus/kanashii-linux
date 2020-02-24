@@ -1,0 +1,26 @@
+# Description: GObject-based multi-platform GUI toolkit
+# URL:         https://www.gtk.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  atk gdk-pixbuf pango hicolor-icon-theme
+# Section:     libs
+
+name=gtk2
+version=2.24.32
+release=4
+source=("http://ftp.gnome.org/pub/gnome/sources/gtk+/${version%.*}/gtk+-$version.tar.xz")
+
+build() {
+	cd "$SRC"/gtk+-$version
+	sed -e 's#l \(gtk-.*\).sgml#& -o \1#' -i docs/{faq,tutorial}/Makefile.in
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-gtk-doc
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+
+	rm "$PKG"/usr/bin/gtk-update-icon-cache
+}

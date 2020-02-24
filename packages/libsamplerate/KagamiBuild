@@ -1,0 +1,27 @@
+# Description: Secret Rabbit Code - aka Sample Rate Converter for audio
+# URL:         http://www.mega-nerd.com/SRC/index.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libsndfile
+# Section:     audio
+
+name=libsamplerate
+version=0.1.9
+release=1
+source=("http://www.mega-nerd.com/SRC/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

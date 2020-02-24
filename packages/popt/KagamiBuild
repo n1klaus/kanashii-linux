@@ -1,0 +1,22 @@
+# Description: A commandline option parser
+# URL:         http://rpm5.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=popt
+version=1.16
+release=1
+options=('bootstrap')
+source=("http://distfiles.gentoo.org/distfiles/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	cp "$STUFF"/config.guess config.guess
+	cp "$STUFF"/config.sub config.sub
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-nls
+	make
+	make DESTDIR="$PKG" install
+}

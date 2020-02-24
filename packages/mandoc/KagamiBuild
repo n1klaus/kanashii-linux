@@ -1,0 +1,32 @@
+# Description: A suite of tools compiling mdoc from the OpenBSD project
+# URL:         https://mdocml.bsd.lv/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=mandoc
+version=1.14.5
+release=2
+options=('bootstrap')
+source=("https://mdocml.bsd.lv/snapshots/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np0 -i "$STUFF"/mandoc/cross.patch
+	patch -Np1 -i "$STUFF"/mandoc/pager.patch
+
+	cat >configure.local <<EOF
+PREFIX=/usr
+SBINDIR=/usr/bin
+MANDIR=/usr/share/man
+OSNAME="Ataraxia Linux"
+CFLAGS="$CFLAGS"
+CC=${CROSS_COMPILE}cc
+HAVE_REWB_BSD=0
+UTF8_LOCALE="C.UTF-8"
+EOF
+
+	./configure
+	make
+	make DESTDIR="$PKG" install
+}

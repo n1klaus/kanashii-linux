@@ -1,0 +1,39 @@
+# Description: Userspace interface to kernel DRM services
+# URL:         https://dri.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  systemd meson libpciaccess
+# Section:     x11
+
+name=libdrm
+version=2.4.100
+release=1
+source=("https://dri.freedesktop.org/$name/$name-$version.tar.bz2")
+
+build() {
+	case $BARCH in
+		x86_64|i586)
+			drm="-Damdgpu=true -Dradeon=true -Dnouveau=true -Dvmwgfx=true -Detnaviv=true -Dintel=true"
+			;;
+		ppc64le|ppc64|ppc|riscv64|riscv32)
+			drm="-Damdgpu=true -Dradeon=true -Dnouveau=true -Detnaviv=true"
+			;;
+		arch64|armv7hnl|armv7hl|armv5tel)
+			drm="-Damdgpu=true -Dradeon=true -Dnouveau=true -Domap=true -Dexynos=true -Dfreedreno=true -Dtegra=true -Dvc4=true -Detnaviv=true"
+			;;
+		*)
+			drm=""
+			;;
+	esac
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libdrm/ioctl.patch
+
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version $drm \
+		-Dudev=true \
+		-Dvalgrind=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}

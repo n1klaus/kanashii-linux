@@ -1,0 +1,75 @@
+# Description: Next-generation package and configuration manager
+# URL:         https://github.com/ataraxialinux/neko
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  bash libarchive curl rpm
+# Priority:    required
+# Section:     base
+
+name=neko
+version=0.100
+release=1
+options=('bootstrap')
+backup=('etc/neko/make.conf')
+source=("https://github.com/ataraxialinux/neko/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/neko/920f90b930686dfb67aa3cb00c8b00bc49bec85b.patch
+	autoreconf -vif
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/reposync "$PKG"/usr/bin/reposync
+
+	mkdir -p "$PKG"/etc "$PKG"/var/cache/{packages,sources}
+
+	mkdir -p "$PKG"/etc/neko
+	cat > "$PKG"/etc/neko/make.conf <<-EOF
+		# Uncomment if you want parallel build or add certain options for 'make' or 'ninja'
+		#
+		# MKOPTS=""
+		
+		# Specify options for `curl` downloader
+		# CURLOPTS=""
+
+		# Specify options for git
+		# GITOPTS=""
+		
+		# Options for build:
+		#
+		#  emptydirs - Leave empty directories
+		#  strip     - Remove debug information from binaries
+		#  makeflags - Enable parallel build
+		#  locales   - Leave localization files
+		#  docs      - Leave documentation files
+		#  ccache    - Enable ccache
+		#
+		# Add '~' before option name to disable certain option
+		#
+		OPTIONS=('emptydirs' 'strip' 'makeflags' '~locales' '~docs' 'ccache' '~libtool')
+		
+		# Source and package destination
+		#
+		PKGDEST="/var/cache/packages"
+		SRCDEST="/var/cache/sources"
+		
+		# Repositories
+		#
+		REPOS=('/usr/ports/packages')
+		
+		export STUFF="/usr/ports/stuff"
+		
+		export BARCH="$BARCH"
+		
+		export XTARGET="$XTARGET"
+		export BUILDFLAGS="--build=$XTARGET --host=$XTARGET"
+		export TOOLFLAGS="--build=$XTARGET --host=$XTARGET --target=$XTARGET"
+		export PERLFLAGS=
+		
+		export CFLAGS="$CFLAGS"
+		export CXXFLAGS="$CXXFLAGS"
+	EOF
+}

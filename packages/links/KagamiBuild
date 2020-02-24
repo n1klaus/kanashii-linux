@@ -1,0 +1,19 @@
+# Description: A text WWW browser, similar to Lynx
+# URL:         http://links.twibright.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 xz zstd libressl libevent
+# Section:     web
+
+name=links
+version=2.20.2
+release=1
+source=("http://links.twibright.com/download/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man
+	make
+	make DESTDIR="$PKG" install
+}

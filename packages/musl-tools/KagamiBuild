@@ -1,0 +1,18 @@
+# Description: Misc utilities for musl libc
+# URL:         https://ataraxialinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=musl-tools
+version=20190213
+release=1
+options=('bootstrap')
+
+build() {
+	mkdir -p "$PKG"/usr/bin
+
+	for file in getconf getent iconv; do
+		${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/musl-tools/${file}.c -o "$PKG"/usr/bin/$file
+	done
+}

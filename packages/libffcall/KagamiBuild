@@ -1,0 +1,22 @@
+# Description: C library for implementing foreign function calls in embedded interpreters
+# URL:         http://www.gnu.org/software/libffcall/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libffcall
+version=2.2
+release=1
+options=('~makeflags')
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--disable-shared
+	make -j1
+
+	install -d "$PKG"/usr/share/{man,doc/ffcall}
+	make DESTDIR="$PKG" install
+}

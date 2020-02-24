@@ -1,0 +1,37 @@
+# Description: Give certain users the ability to run some commands as root
+# URL:         https://www.sudo.ws/sudo/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib pam
+# Section:     admin
+
+name=sudo
+version=1.8.31
+release=1
+backup=('etc/sudoers')
+source=("http://www.sudo.ws/dist/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/lib \
+		--with-rundir=/run/sudo \
+		--with-vardir=/var/db/sudo \
+		--with-all-insults \
+		--with-env-editor \
+		--with-pam \
+		--with-passprompt="[sudo] password for %p: " \
+		--without-skey \
+		--enable-pie \
+		--disable-nls
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/pam.d/sudo "$PKG"/etc/pam.d/sudo
+
+	rm -rf "$PKG"/{no,usr/local,usr/include}
+	rm -rf "$PKG"/etc/sudoers.dist
+
+	ln -sf libsudo_util.so.0.0.0 "$PKG"/usr/lib/sudo/libsudo_util.so.0
+}

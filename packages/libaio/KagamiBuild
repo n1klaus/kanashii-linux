@@ -1,0 +1,22 @@
+# Description: The Linux-native asynchronous I/O facility (aio) library
+# URL:         http://lse.sourceforge.net/io/aio.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libaio
+version=0.3.112
+release=1
+source=("http://ftp.de.debian.org/debian/pool/main/liba/$name/${name}_${version}.orig.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	export CFLAGS="$CFLAGS -fno-stack-protector"
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make CC="$CC" HOSTCC="$HOSTCC"
+		make CC="$CC" HOSTCC="$HOSTCC" prefix="$PKG"/usr install
+	else
+		make
+		make prefix="$PKG"/usr install
+	fi
+}

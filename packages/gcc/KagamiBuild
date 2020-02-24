@@ -1,0 +1,199 @@
+# Description: The GNU Compiler Collection
+# URL:         http://gcc.gnu.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  mpc binutils
+# Priority:    required
+# Section:     devel
+
+name=gcc
+version=9.2.0
+islver=0.21
+release=3
+options=('~emptydirs' '~strip' 'bootstrap')
+source=("http://ftp.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz"
+	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
+
+build() {
+	if [ -z "$XTARGET" ]; then
+		export XTARGET="$(cc -dumpmachine)"
+	fi
+
+	if [ -z "$GCCOPTS" ]; then
+		case $BARCH in
+			x86_64)
+				export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+				;;
+			i586)
+				export GCCOPTS="--with-arch=i586 --with-tune=generic"
+				;;
+			aarch64)
+				export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
+				;;
+			armv7hnl)
+				export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
+				;;
+			armv7hl)
+				export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+				;;
+			armv5tel)
+				export GCCOPTS="--with-arch=armv5te --with-float=soft"
+				;;
+			mips64)
+				export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
+				;;
+			mips64el)
+				export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
+				;;
+			mips)
+				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
+				;;
+			mipsel)
+				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
+				;;
+			ppc64le)
+				export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-targets=powerpcle-linux --disable-decimal-float --disable-libquadmath"
+				;;
+			ppc64)
+				export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-targets=powerpc-linux --disable-decimal-float --disable-libquadmath"
+				;;
+			ppc)
+				export GCCOPTS="--with-long-double=64 --enable-secureplt --disable-decimal-float"
+				;;
+			riscv64)
+				export GCCOPTS=""
+				;;
+			riscv32)
+				export GCCOPTS=""
+				;;
+			*)
+				echo "Architecture is not set or is not supported by Ataraxia Linux"
+				exit 1
+		esac
+	fi
+
+	case "$BARCH" in
+		mips64|mips64el|mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
+		*)				HASHCONFIG="--with-linker-hash-style=gnu"	;;
+	esac
+
+	export CFLAGS_FOR_BUILD=" "
+	export FFLAGS_FOR_BUILD=" "
+	export CXXFLAGS_FOR_BUILD=" "
+	export LDFLAGS_FOR_BUILD=" "
+	export CFLAGS_FOR_TARGET=" "
+	export FFLAGS_FOR_TARGET=" "
+	export CXXFLAGS_FOR_TARGET=" "
+	export LDFLAGS_FOR_TARGET=" "
+
+	cd "$SRC"/gcc-$version
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+
+	patch -Np1 -i "$STUFF"/gcc/0001-Use-musl-s-libssp_nonshared.a.patch
+	patch -Np1 -i "$STUFF"/gcc/0002-POSIX-memalign.patch
+	patch -Np1 -i "$STUFF"/gcc/0003-Define-musl-ldso-for-s390.patch
+	patch -Np1 -i "$STUFF"/gcc/0004-microblaze-pr65649.patch
+	patch -Np1 -i "$STUFF"/gcc/0005-define-128-long-double-for-some-musl-targets.patch
+	patch -Np1 -i "$STUFF"/gcc/0006-add-support-for-m68k-musl.patch
+	patch -Np1 -i "$STUFF"/gcc/0007-add-support-for-static-pie.patch
+	patch -Np1 -i "$STUFF"/gcc/0008-cpu-indicator.patch
+	patch -Np1 -i "$STUFF"/gcc/0009-fix-tls-model.patch
+	patch -Np1 -i "$STUFF"/gcc/0010-libgcc-always-build-gcceh.a.patch
+	patch -Np1 -i "$STUFF"/gcc/0011-fix-support-for-Ada.patch
+	patch -Np1 -i "$STUFF"/gcc/0003-gcc-poison-system-directories.patch
+	patch -Np1 -i "$STUFF"/gcc/security.patch
+	patch -Np1 -i "$STUFF"/gcc/gcc-pure64.patch
+	patch -Np1 -i "$STUFF"/gcc/gcc-pure64-mips.patch
+	patch -Np1 -i "$STUFF"/gcc/gcc-pure64-riscv.patch
+
+	mv ../isl-$islver isl
+
+	mkdir build
+	cd build
+
+	SED=sed \
+	../configure $TOOLFLAGS $GCCOPTS $HASHCONFIG \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--with-pkgversion="Ataraxia Linux edition $version for $BARCH" \
+		--with-bugurl="https://github.com/ataraxialinux/ataraxia/issues" \
+		--with-isl \
+		--with-system-zlib \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-clocale=generic \
+		--enable-default-pie \
+		--enable-default-ssp \
+		--enable-install-libiberty \
+		--enable-languages=c,c++,fortran,lto \
+		--enable-libstdcxx-time \
+		--enable-linker-build-id \
+		--enable-lto \
+		--enable-plugins \
+		--enable-shared \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-bootstrap \
+		--disable-gnu-indirect-function \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libssp \
+		--disable-libstdcxx-pch \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
+	else
+		make
+	fi
+
+	make -j1 DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/gcc/c89 "$PKG"/usr/bin/c89
+	install -Dm755 "$STUFF"/gcc/c99 "$PKG"/usr/bin/c99
+
+	ln -sf ../bin/cpp "$PKG"/usr/lib
+
+	install -dm755 "$PKG"/usr/lib/bfd-plugins
+	ln -sf /usr/lib/gcc/$XTARGET/$version/liblto_plugin.so "$PKG"/usr/lib/bfd-plugins/
+
+	mkdir -p "$PKG"/usr/share/gdb/auto-load/usr/lib
+	mv "$PKG"/usr/lib/*gdb.py "$PKG"/usr/share/gdb/auto-load/usr/lib
+
+	mkdir -p "$SRC"/savedlibs
+	mv "$PKG"/usr/lib/*.so{,.*} "$SRC"/savedlibs
+
+	run_strip "$PKG"
+
+	mv "$SRC"/savedlibs/*.so{,.*} "$PKG"/usr/lib
+
+	(
+		cd "$PKG"/usr/bin
+		mv g++ g++-gcc-$version
+		mv gcc gcc-$version
+		mv $XTARGET-gfortran gfortran-gcc-$version
+		ln -sf g++-gcc-$version g++
+		ln -sf gcc-$version gcc
+		ln -sf g++ c++
+		ln -sf gcc cc
+		ln -sf gcc-$version $XTARGET-gcc
+		ln -sf gcc-$version $XTARGET-gcc-$version
+		ln -sf gcc-ar $XTARGET-gcc-ar
+		ln -sf gcc-nm $XTARGET-gcc-nm
+		ln -sf gcc-ranlib $XTARGET-gcc-ranlib
+		ln -sf g++-gcc-$version $XTARGET-c++
+		ln -sf g++-gcc-$version $XTARGET-g++
+		ln -sf gfortran-gcc-$version gfortran
+		ln -sf gfortran-gcc-$version $XTARGET-gfortran
+		ln -sf gfortran-gcc-$version $XTARGET-gfortran-$version
+		ln -sf gfortran-gcc-$version $XTARGET-g95
+		ln -sf gfortran g95
+		ln -sf gfortran f95
+		ln -sf gfortran-gcc-$version $XTARGET-g77
+		ln -sf gfortran g77
+		ln -sf gfortran f77
+	)
+}

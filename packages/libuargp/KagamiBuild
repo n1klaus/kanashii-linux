@@ -1,0 +1,18 @@
+# Description: libuargp extracted from uclibc, modified lightly, intl-friendly 
+# URL:         https://github.com/xhebox/libuargp/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=libuargp
+version=20190729
+commit=b9f1d59279eef0a79853867745036b018f2b2348
+release=1
+options=('bootstrap')
+source=("https://github.com/xhebox/libuargp/archive/$commit.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$commit
+	make
+	make prefix=/usr DESTDIR="$PKG" install
+}

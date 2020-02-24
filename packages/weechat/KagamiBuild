@@ -1,0 +1,27 @@
+# Description: Fast, light and extensible IRC client (curses UI)
+# URL:         https://www.weechat.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja curl libgcrypt gnutls perl python lua tcl ruby
+# Section:     web
+
+name=weechat
+version=2.7.1
+release=1
+source=("https://github.com/weechat/weechat/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DPYTHON_EXECUTABLE=/usr/bin/python3 \
+		-DPYTHON_LIBRARY=/usr/lib/libpython3.so \
+		-DENABLE_DOC=OFF \
+		-DENABLE_MAN=OFF \
+		-DENABLE_NLS=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

@@ -1,0 +1,219 @@
+#!/bin/bash
+
+build_busybox() {
+	local busyboxver="1.31.1"
+
+	pushd "$SRCDEST"
+		rm -rf busybox-$busyboxver
+		tar -xf busybox-$busyboxver.tar.bz2
+
+		cd busybox-$busyboxver
+		patch -Np1 -i "$STUFF"/busybox/musl.patch
+		make mrproper $MKOPTS
+
+		cp "$STUFF"/busybox/live-config .config
+
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" $MKOPTS
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links $MKOPTS
+
+		install -Dm4755 busybox "$INITRAMFS"/usr/bin/busybox
+
+		for applet in `cat busybox.links|sed 's|^.*/||'`; do
+			if [ ! -L "$INITRAMFS/usr/bin/$applet" ]; then
+				ln -sf busybox "$INITRAMFS"/usr/bin/$applet
+			fi
+		done
+
+		rm -rf busybox-$busyboxver
+	popd
+}
+
+generate_initramfs() {
+	packages="base-files netbase musl zlib file ncurses readline bzip2 cracklib pam libpwquality attr acl libcap \
+		shadow pcre grep mksh bash expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive lzo kmod busybox \
+		mawk hostname dialog pigz libmnl libnl iproute2 kbd nano hwids systemd dbus libcap-ng util-linux e2fsprogs btrfs-progs \
+		dosfstools wireless_tools wpa_supplicant popt gptfdisk wget linux"
+
+	neko em -c "$BUILD"/target.config -r "$INITRAMFS" -wd $packages
+
+	build_busybox
+
+	pushd "$INITRAMFS"
+		mkdir -p etc/systemd/system/getty@tty1.service.d/
+cat > etc/systemd/system/getty@tty1.service.d/override.conf << "EOF"
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/agetty --autologin root %I $TERM
+EOF
+		ln -sf usr/lib/systemd/systemd init
+
+		cp "$TOOLS"/$XTARGET/lib/libgcc_s.so.1 usr/lib/
+		cp "$TOOLS"/$XTARGET/lib/libstdc++.so.6 usr/lib/
+
+		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
+				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
+				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
+				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio; do
+			rm -rf usr/bin/$bins
+		done
+
+		ln -sf bsdtar usr/bin/tar
+		ln -sf bsdcpio usr/bin/cpio
+
+		rm -rf usr/include
+		rm -rf usr/share/man
+		rm -rf usr/share/doc
+		rm -rf usr/share/info
+		rm -rf usr/share/icons
+		rm -rf usr/share/perl5
+		rm -rf usr/share/bash-completion
+		rm -rf usr/share/applications
+		rm -rf usr/share/aclocal
+		rm -rf usr/share/cracklib
+		rm -rf usr/share/dict
+		rm -rf usr/share/nano
+		rm -rf usr/lib/modules/*/kernel/sound
+		rm -rf usr/lib/modules/*/kernel/drivers/gpu
+		rm -rf etc/nanorc
+
+		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null || true
+		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
+		find . | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug 2>/dev/null || true
+
+		find . -name "*.a" -print0 | xargs -0 rm -rf
+		find . -name "*.h" -print0 | xargs -0 rm -rf
+		find . -name "*.hpp" -print0 | xargs -0 rm -rf
+		find . -name "*.pc" -print0 | xargs -0 rm -r
+
+		mv $(realpath boot/vmlinuz) "$ISODIR"/seiba/seiba
+		rm -rf boot/vmlinuz
+
+		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
+	popd
+}
+
+make_iso_x86() {
+	mkdir -p "$ISODIR"/boot/grub "$ISODIR"/boot/isolinux "$ISODIR"/efi/boot
+
+	grub_mod="all_video disk part_gpt part_msdos linux normal configfile search search_label efi_gop fat iso9660 cat echo ls test true help gzio multiboot2 efi_uga"
+
+	case $BARCH in
+		x86_64)
+			format="x86_64-efi"
+			efi="bootx64.efi"
+			;;
+		i586)
+			format="i586-efi"
+			efi="bootia32.efi"
+			;;
+	esac
+
+cat << CEOF > "$GRUBEFICFG"
+search --no-floppy --set=root --label "ataraxialinux"
+set prefix=(\$root)/boot/grub
+CEOF
+
+cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
+menuentry "Ataraxia Linux" {
+linux	/seiba/seiba rw quiet
+initrd	/seiba/seiba.zst
+}
+CEOF
+
+	"$BUILD"/tools/bin/grub-mkimage \
+		--config="$GRUBEFICFG" \
+		--prefix="/boot/grub" \
+		--output="$ISODIR"/efi/boot/$efi \
+		--format="$format" \
+		--compress="xz" \
+		$grub_mod
+
+	mformat -i "$ISODIR"/boot/grub/efi.img -C -f 1440 ::
+	mcopy -i "$ISODIR"/boot/grub/efi.img -s "$ISODIR"/efi ::
+
+	cp -a "$STUFF"/mklive/isolinux.bin "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/ldlinux.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/libcom32.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/vesamenu.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/libutil.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/chain.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/background.png "$ISODIR"/boot/isolinux/background.png
+
+cat << CEOF > "$ISODIR"/boot/isolinux/isolinux.cfg
+UI vesamenu.c32
+PROMPT 0
+TIMEOUT 100
+ONTIMEOUT ataraxialinux
+MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
+MENU AUTOBOOT BIOS default device boot in # second{,s}...
+MENU BACKGROUND /boot/isolinux/background.png
+MENU WIDTH 78
+MENU MARGIN 1
+MENU ROWS 4
+MENU VSHIFT 2
+MENU TIMEOUTROW 8
+MENU TABMSGROW 2
+MENU CMDLINEROW 11
+MENU HELPMSGROW 16
+MENU HELPMSGENDROW 29
+MENU COLOR title        * #9000FF *
+MENU COLOR border       * #00000000 #00000000 none
+MENU COLOR sel          * #ffffffff #9000FF *
+LABEL ataraxialinux
+MENU LABEL Ataraxia Linux
+KERNEL /seiba/seiba rw quiet
+APPEND initrd=/seiba/seiba.zst
+CEOF
+
+	xorriso -as mkisofs \
+		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
+		-iso-level 2 \
+		-c boot/isolinux/boot.cat \
+		-b boot/isolinux/isolinux.bin \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		-eltorito-alt-boot \
+		-e boot/grub/efi.img \
+		-no-emul-boot \
+		-isohybrid-gpt-basdat \
+		-A 'ataraxialinux' -V 'ataraxialinux' \
+		-o "$BUILD"/ataraxialinux-$BARCH.iso \
+		"$ISODIR"/
+}
+
+make_iso_ppc() {
+	mkdir -p "$TOOLS"/share/grub "$ISODIR"/boot/grub
+
+cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
+menuentry "Ataraxia Linux" {
+linux	/seiba/seiba root=/dev/ram0 rw quiet
+initrd	/seiba/seiba.zst
+}
+CEOF
+
+	"$BUILD"/tools/bin/grub-mkrescue \
+		--output "$BUILD"/ataraxialinux-$BARCH.iso "$ISODIR"/ \
+		-A 'ataraxialinux' -V 'ataraxialinux'
+}
+
+main() {
+	ISODIR="$BUILD/rootcd"
+	INITRAMFS="$BUILD/initramfs"
+	GRUBEFICFG="$BUILD/efi.cfg"
+
+	rm -rf "$ISODIR" "$INITRAMFS" "$GRUBEFICFG"
+	mkdir -p "$ISODIR/seiba" "$INITRAMFS"
+
+	source "$BUILD/target.config"
+	generate_initramfs
+
+	case $BARCH in
+		x86_64|i586)
+			make_iso_x86
+			;;
+		ppc64le|ppc64|ppc)
+			make_iso_ppc
+			;;
+	esac
+}

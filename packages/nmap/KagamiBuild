@@ -1,0 +1,32 @@
+# Description: Utility for network discovery and security auditing
+# URL:         https://nmap.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pcre libressl lua
+# Section:     net
+
+name=nmap
+version=7.80
+release=1
+source=("https://nmap.org/dist/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--mandir=/usr/share/man \
+		--with-libpcap=included \
+		--disable-nls
+	make
+	make DESTDIR="$PKG" install
+
+	rm "$PKG"/usr/bin/uninstall_*
+}

@@ -1,0 +1,91 @@
+#!/bin/bash
+
+main_standard() {
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	IMAGEFS="$BUILD/imagefs"
+
+	rm -rf "$IMAGEFS"
+	mkdir -p "$IMAGEFS"
+
+	IMG="$BUILD/ataraxialinux-$BARCH.img"
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=4G
+	losetup -f $IMG
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+
+	case $BARCH in
+		x86_64|i586)
+			parted -s $lodev mklabel msdos
+			parted -a optimal -s $lodev mkpart primary 0% 100%
+			parted -s $lodev set 1 boot on
+			;;
+		*)
+			parted -s $lodev mklabel msdos
+			parted -a optimal -s $lodev mkpart primary 0% 100%
+			;;
+	esac
+
+	lopart="${lodev}p1"
+	yes | mkfs.ext4 $lopart
+
+	mount -o loop $lopart "$IMAGEFS"
+
+	packages="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny zlib file \
+		ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache bzip2 pkgconf cracklib pam libpwquality \
+		attr acl libcap shadow pcre grep mksh bash libtool gdbm db expat libressl nettle ca-certificates sqlite libffi \
+		python python-setuptools perl autoconf automake xz lzip lz4 zstd libarchive lzo kmod libuargp libelf busybox coreutils \
+		mawk hostname mandoc dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 \
+		kbd make patch nano hwids gperf ninja meson systemd dbus libcap-ng util-linux e2fsprogs btrfs-progs popt rsync libssh2 c-ares \
+		libev nghttp2 curl lua rpm neko $LINUX"
+
+	neko em -c "$BUILD"/target.config -r "$IMAGEFS" -wd $packages
+
+	umount -l "$IMAGEFS"
+	losetup -d $lodev
+}
+
+main_embedded() {
+	IMAGEFS="$BUILD/imagefs"
+
+	rm -rf "$IMAGEFS"
+	mkdir -p "$IMAGEFS"
+
+	IMG="$BUILD/ataraxialinux-sdcard-$BARCH.img"
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=32M
+	losetup -f $IMG
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+
+	parted -s $lodev mklabel msdos
+	parted -a optimal -s $lodev mkpart primary 0% 100%
+
+	lopart="${lodev}p1"
+	yes | mkfs.ext2 $lopart
+	mount -o loop $lopart "$IMAGEFS"
+
+	neko em -c "$BUILD"/target.config -r "$IMAGEFS" -wd base-files mksh busybox
+
+	pushd "$IMAGEFS"
+		rm -rf usr/include
+		rm -rf usr/share/man
+		rm -rf usr/share/doc
+		rm -rf usr/share/info
+
+		find . -name "*.a" -print0 | xargs -0 rm -rf
+		find . -name "*.h" -print0 | xargs -0 rm -rf
+		find . -name "*.hpp" -print0 | xargs -0 rm -rf
+		find . -name "*.pc" -print0 | xargs -0 rm -r
+	popd
+
+	umount -l "$IMAGEFS"
+	losetup -d $lodev
+}
+
+main() {
+	if [ "$EMBEDDED" = "1" ]; then
+		main_embedded
+	else
+		main_standard
+	fi
+}

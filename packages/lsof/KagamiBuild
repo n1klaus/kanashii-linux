@@ -1,0 +1,19 @@
+# Description: Lists open files for running Unix processes
+# URL:         http://people.freebsd.org/~abe/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     admin
+
+name=lsof
+version=4.93.2
+release=1
+source=("https://github.com/lsof-org/lsof/archive/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|/\* #define\tHASSECURITY\t1 \*/|#define\tHASSECURITY\t1|' dialects/linux/machine.h
+
+	./Configure -n linux
+	make CC="${CC:-cc} ${CFLAGS}"
+
+	install -Dm0755 lsof "$PKG"/usr/bin/lsof
+}

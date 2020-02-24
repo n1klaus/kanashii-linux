@@ -1,0 +1,17 @@
+# Description: Wrapper library for evdev devices
+# URL:         https://www.freedesktop.org/wiki/Software/libevdev/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libevdev
+version=1.8.0
+release=1
+source=("https://www.freedesktop.org/software/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

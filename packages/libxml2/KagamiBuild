@@ -1,0 +1,24 @@
+# Description: XML parsing library, version 2
+# URL:         http://www.xmlsoft.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib readline xz python
+# Section:     text
+
+name=libxml2
+version=2.9.10
+release=1
+source=("http://xmlsoft.org/sources/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-history \
+		--with-python=/usr/bin/python3 \
+		--with-threads \
+		--without-icu
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

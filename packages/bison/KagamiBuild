@@ -1,0 +1,24 @@
+# Description: The GNU general-purpose parser generator
+# URL:         http://www.gnu.org/software/bison/bison.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  m4
+# Priority:    required
+# Section:     devel
+
+name=bison
+version=3.5.2
+release=1
+options=('bootstrap')
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	M4=m4 \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--datadir=/usr/share \
+		--disable-nls
+	make
+	make DESTDIR="$PKG" install
+}

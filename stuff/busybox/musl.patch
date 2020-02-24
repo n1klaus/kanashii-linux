@@ -1,0 +1,11 @@
+--- busybox-1.31.1-orig/libbb/time.c
++++ busybox-1.31.1/libbb/time.c
+@@ -257,7 +257,7 @@
+  * typically requiring -lrt. We just skip all this mess */
+ static void get_mono(struct timespec *ts)
+ {
+-	if (syscall(__NR_clock_gettime, CLOCK_MONOTONIC, ts))
++	if (syscall(clock_gettime, CLOCK_MONOTONIC, ts))
+ 		bb_error_msg_and_die("clock_gettime(MONOTONIC) failed");
+ }
+ unsigned long long FAST_FUNC monotonic_ns(void)

@@ -1,0 +1,35 @@
+# Description: Distributed compilation service for C, C++ and Objective-C
+# URL:         http://distcc.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python popt
+# Section:     devel
+
+name=distcc
+version=3.3.3
+release=2
+backup=('etc/conf.d/distccd'
+	'etc/distcc/hosts')
+source=("https://github.com/distcc/distcc/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--without-avahi \
+		--without-gtk
+	make WERROR_CFLAGS= INCLUDESERVER_PYTHON=/usr/bin/python
+	make DESTDIR="$PKG" INCLUDESERVER_PYTHON=/usr/bin/python install
+
+	install -d "$PKG"/usr/lib/$name/bin
+	for bin in c++ cc cpp g++ gcc; do
+		ln -sf /usr/bin/$name "$PKG"/usr/lib/$name/bin/$bin
+		ln -sf /usr/bin/$name "$PKG"/usr/lib/$name/$bin
+	done
+
+	install -Dm644 "$STUFF"/svc/distcc.service "$PKG"/usr/lib/systemd/system/distcc.service
+	install -Dm644 "$STUFF"/svc/distcc.confd "$PKG"/etc/conf.d/distcc
+}

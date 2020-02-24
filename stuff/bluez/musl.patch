@@ -1,0 +1,24 @@
+--- bluez-5.47/src/shared/util.h.old	2016-09-26 07:29:00.000000000 -0500
++++ bluez-5.47/src/shared/util.h	2017-12-27 22:49:50.538716424 -0600
+@@ -26,6 +26,7 @@
+ #include <alloca.h>
+ #include <byteswap.h>
+ #include <string.h>
++#include <endian.h>
+ 
+ #if __BYTE_ORDER == __LITTLE_ENDIAN
+ #define le16_to_cpu(val) (val)
+
+diff --git a/mesh/net.h b/mesh/net.h
+index 150240f..a3dec2b 100644
+--- a/mesh/net.h
++++ b/mesh/net.h
+@@ -21,6 +21,8 @@
+ #define __packed __attribute__((packed))
+ #endif
+ 
++#include <sys/time.h> /* for timeval */
++
+ struct mesh_io;
+ struct mesh_node;
+

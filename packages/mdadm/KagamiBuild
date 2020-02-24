@@ -1,0 +1,28 @@
+# Description: A tool for managing/monitoring Linux md device arrays, also known as Software RAID
+# URL:         http://neil.brown.name/blog/mdadm
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     admin
+
+name=mdadm
+version=4.1
+release=3
+backup=('etc/mdadm/mdadm.conf')
+source=("https://www.kernel.org/pub/linux/utils/raid/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np0 -i "$STUFF"/mdadm/werror.patch
+	patch -Np1 -i "$STUFF"/mdadm/sysmarcros.patch
+
+	mkdir -p "$PKG"/usr/bin
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CXFLAGS="$CFLAGS" STRIP='' CHECK_RUN_DIR=0 PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system all
+		make HOSTCC="$HOSTCC" CC="$CC" CXFLAGS="$CFLAGS" STRIP='' CHECK_RUN_DIR=0 PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system DESTDIR="$PKG" install
+	else
+		make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system all
+		make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system DESTDIR="$PKG" install
+	fi
+
+	install -D -m644 "$STUFF"/mdadm/mdadm.conf "$PKG"/etc/mdadm/mdadm.conf
+}

@@ -1,0 +1,19 @@
+# Description: A spell checker designed to eventually replace Ispell
+# URL:         http://aspell.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     text
+
+name=aspell
+version=0.60.8
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-nls
+	make
+	make DESTDIR="$PKG" install
+}

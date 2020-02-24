@@ -1,0 +1,25 @@
+# Description: Library for applications dealing with netlink sockets
+# URL:         https://github.com/thom311/libnl/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     libs
+
+name=libnl
+version=3.5.0
+release=1
+backup=('etc/libnl/classid'
+	'etc/libnl/pktloc')
+options=('bootstrap')
+source=("https://github.com/thom311/libnl/releases/download/libnl${version//./_}/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--disable-nls \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}

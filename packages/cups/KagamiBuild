@@ -1,0 +1,55 @@
+# Description: The CUPS Printing System
+# URL:         https://www.cups.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam gnutls colord dbus libusb
+# Section:     admin
+
+name=cups
+version=2.3.1
+release=1
+backup=('etc/cups/cupsd.conf'
+	'etc/cups/snmp.conf'
+	'etc/cups/cups-files.conf'
+	'etc/logrotate.d/cups'
+	'etc/pam.d/cups')
+source=("https://github.com/apple/cups/releases/download/v$version/$name-$version-source.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-menudir=/usr/share/applications \
+		--with-icondir=/usr/share/icons \
+		--with-logdir=/var/log/cups \
+		--with-docdir=/usr/share/cups \
+		--with-rundir=/run/cups \
+		--with-cupsd-file-perm=0755 \
+		--with-dbusdir=/usr/share/dbus-1 \
+		--with-cups-user=lp \
+		--with-cups-group=lp \
+		--with-system-groups=lpadmin \
+		--with-optim="$CFLAGS" \
+		--enable-gnutls \
+		--enable-pam=yes \
+		--enable-ssl=yes \
+		--enable-threads
+	make
+	make BUILDROOT="$PKG" install
+
+	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
+	install -Dm644 "$STUFF"/pam.d/cups "$PKG"/etc/pam.d/cups
+
+	rm -rf "$PKG"/etc/rc*.d
+	rm -rf "$PKG"/etc/init.d
+	rm -rf "$PKG"/run
+	rm -r "$PKG"/usr/share/cups/{banners,data}
+	rm -rf "$PKG"/usr/share/{applications,icons}
+	chmod 0755 "$PKG"/var/{cache,spool}   
+	chmod -R +w "$PKG"
+
+	install -dm700 -g 209 "$PKG"/etc/cups/ssl
+}

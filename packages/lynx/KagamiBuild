@@ -1,0 +1,37 @@
+# Description: Text-based web browser.
+# URL:         http://lynx.isc.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib ncurses bzip2 libressl
+# Section:     web
+
+name=lynx
+version=2.8.9rel.1
+release=1
+backup=('etc/lynx.cfg')
+source=("http://invisible-mirror.net/archives/lynx/tarballs/${name}${version}.tar.gz")
+
+build() {
+	HOSTCC=${HOSTCC:-cc}
+
+	cd "$SRC"/${name}${version}
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		HOSTCC=${HOSTCC:-cc}
+
+		sed -i configure \
+			-e '/LDFLAGS="-L$cf_add_libdir $LDFLAGS"/d' \
+			-e 's;,$BUILD_CC;,$HOSTCC;' \
+			-e 's;,$BUILD_CFLAGS;,$CFLAGS_FOR_BUILD;' \
+			-e 's;,$BUILD_LDFLAGS;,$LDFLAGS_FOR_BUILD;'
+	fi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-bzlib \
+		--with-ssl \
+		--with-zlib \
+		--enable-ipv6 \
+		--disable-nls
+	make
+	make DESTDIR="$PKG" install
+}

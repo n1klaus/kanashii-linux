@@ -1,0 +1,2 @@
+site='https://github.com/knik0/faad2/releases'
+pattern='/archive/\K[\d\_]+(?=\.tar\.gz")'

@@ -1,0 +1,27 @@
+# Description: X11 pixmap library
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  util-macros libxext libxt
+# Section:     x11
+
+name=libxpm
+version=3.5.13
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/lib/$(echo $name | sed -e 's,libx,libX,g')-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$(echo $name | sed -e 's,libx,libX,g')-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}

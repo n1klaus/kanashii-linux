@@ -1,0 +1,22 @@
+# Description: X keyboard configuration files
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool xorg-apps
+# Section:     x11
+
+name=xkeyboard-config
+version=2.29
+release=1
+source=("https://xorg.freedesktop.org/archive/individual/data/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-xkb-base=/usr/share/X11/xkb \
+		--with-xkb-rules-symlink=xorg \
+		--enable-compat-rules \
+		--enable-xkbcomp-symlink
+	make
+	make DESTDIR="$PKG" install
+}

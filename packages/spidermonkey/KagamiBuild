@@ -1,0 +1,41 @@
+# Description: JavaScript interpreter and libraries
+# URL:         https://www.mozilla.org/js/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  autoconf2.13 python2 yasm zlib readline libffi nspr icu
+# Section:     interpreters
+
+name=spidermonkey
+version=60.9.0
+release=1
+source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
+
+build() {
+	export SHELL=/bin/bash
+	export PYTHON=/usr/bin/python2
+
+	cd "$SRC"
+	mkdir build
+	cd build
+
+	"$SRC"/firefox-${version}/js/src/configure  \
+		--prefix=/usr \
+		--with-intl-api \
+		--with-system-icu \
+		--with-system-nspr \
+		--with-system-zlib \
+		--enable-ctypes \
+		--enable-pie \
+		--enable-readline \
+		--enable-shared-js \
+		--enable-system-ffi \
+		--disable-debug \
+		--disable-debug-symbols \
+		--disable-jemalloc \
+		--disable-optimize \
+		--disable-strip \
+		--disable-tests \
+		--host=$XTARGET \
+		--target=$XTARGET
+	make
+	make DESTDIR="$PKG" install
+}

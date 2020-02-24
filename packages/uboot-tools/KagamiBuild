@@ -1,0 +1,24 @@
+# Description: U-Boot bootloader utility tools
+# URL:         https://www.denx.de/wiki/U-Boot/WebHome
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl
+# Section:     misc
+
+name=uboot-tools
+version=2020.01
+release=1
+source=("https://github.com/u-boot/u-boot/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/u-boot-$version
+	patch -Np1 -i "$STUFF"/uboot-tools/fix-ulong-typedef.patch
+
+	make defconfig
+	make tools-all
+
+	mkdir -p "$PKG"/usr/bin
+
+	for a in {mk{,env}image,env/fw_printenv,img2srec,dumpimage,netconsole,jtagconsole,ncb}; do
+		cp tools/$a "$PKG"/usr/bin
+	done
+}

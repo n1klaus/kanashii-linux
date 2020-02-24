@@ -1,0 +1,72 @@
+diff -ruN polkit-0.116-orig/configure.ac polkit-0.116/configure.ac
+--- polkit-0.116-orig/configure.ac	2019-04-02 11:20:42.000000000 +0000
++++ polkit-0.116/configure.ac	2019-05-25 08:56:54.249997511 +0000
+@@ -99,7 +99,7 @@
+ 	     [AC_MSG_ERROR([Can't find expat library. Please install expat.])])
+ AC_SUBST(EXPAT_LIBS)
+ 
+-AC_CHECK_FUNCS(clearenv fdatasync)
++AC_CHECK_FUNCS(clearenv fdatasync getnetgrent)
+ 
+ if test "x$GCC" = "xyes"; then
+   LDFLAGS="-Wl,--as-needed $LDFLAGS"
+diff -ruN polkit-0.116-orig/src/polkitbackend/polkitbackendinteractiveauthority.c polkit-0.116/src/polkitbackend/polkitbackendinteractiveauthority.c
+--- polkit-0.116-orig/src/polkitbackend/polkitbackendinteractiveauthority.c	2019-04-02 11:20:42.000000000 +0000
++++ polkit-0.116/src/polkitbackend/polkitbackendinteractiveauthority.c	2019-05-25 08:59:32.456663227 +0000
+@@ -2235,6 +2235,7 @@
+   ret = NULL;
+   name = polkit_unix_netgroup_get_name (POLKIT_UNIX_NETGROUP (group));
+ 
++#if defined HAVE_GETNETGRENT
+ #ifdef HAVE_SETNETGRENT_RETURN
+   if (setnetgrent (name) == 0)
+     {
+@@ -2244,6 +2245,7 @@
+ #else
+   setnetgrent (name);
+ #endif
++#endif
+ 
+   for (;;)
+     {
+@@ -2255,8 +2257,10 @@
+       PolkitIdentity *user;
+       GError *error = NULL;
+ 
++#if defined HAVE_GETNETGRENT
+       if (getnetgrent (&hostname, &username, &domainname) == 0)
+         break;
++#endif
+ 
+       /* Skip NULL entries since we never want to make everyone an admin
+        * Skip "-" entries which mean "no match ever" in netgroup land */
+@@ -2281,7 +2285,9 @@
+   ret = g_list_reverse (ret);
+ 
+  out:
++#if defined HAVE_GETNETGRENT
+   endnetgrent ();
++#endif
+   return ret;
+ }
+ 
+diff -ruN polkit-0.116-orig/src/polkitbackend/polkitbackendjsauthority.cpp polkit-0.116/src/polkitbackend/polkitbackendjsauthority.cpp
+--- polkit-0.116-orig/src/polkitbackend/polkitbackendjsauthority.cpp	2019-04-02 12:54:12.000000000 +0000
++++ polkit-0.116/src/polkitbackend/polkitbackendjsauthority.cpp	2019-05-25 09:02:25.396662124 +0000
+@@ -1504,6 +1504,7 @@
+ 
+   JS::RootedString usrstr (authority->priv->cx);
+   usrstr = args[0].toString();
++#if defined HAVE_GETNETGRENT
+   user = JS_EncodeStringToUTF8 (cx, usrstr);
+   JS::RootedString netgstr (authority->priv->cx);
+   netgstr = args[1].toString();
+@@ -1521,7 +1522,7 @@
+   JS_free (cx, user);
+ 
+   ret = true;
+-
++#endif
+   args.rval ().setBoolean (is_in_netgroup);
+ 
+   return ret;

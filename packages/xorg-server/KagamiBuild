@@ -1,0 +1,54 @@
+# Description: Xorg X server
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson libressl nettle systemd libtirpc tslib pixman libepoxy wayland-protocols egl-wayland xkeyboard-config xorg-fonts libdmx libxaw libxcomposite libxcursor libxfont2 libxft libxinerama libxkbfile libxrandr libxres libxtst libxxf86dga xcb-util-keysyms xcb-util-image xcb-util-renderutil xcb-util-wm
+# Section:     x11
+
+name=xorg-server
+version=1.20.7
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/xserver/$name-$version.tar.bz2")
+
+build() {
+	export CFLAGS="$CFLAGS -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t"
+	export LDFLAGS="-Wl,-z,lazy"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/xorg-server/rootless.patch
+
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddmx=true \
+		-Ddri2=true \
+		-Ddri3=true \
+		-Dglamor=true \
+		-Dglx=true \
+		-Dhal=false \
+		-Dipv6=true \
+		-Dlinux_acpi=true \
+		-Dos_vendor="Ataraxia" \
+		-Dsuid_wrapper=true \
+		-Dudev=true \
+		-Dxcsecurity=true \
+		-Dxephyr=true \
+		-Dxkb_dir=/usr/share/X11/xkb \
+		-Dxkb_output_dir=/var/lib/xkb \
+		-Dxnest=true \
+		-Dxorg=true \
+		-Dxvfb=true \
+		-Dxwayland=true \
+		-Dxwayland_eglstream=true
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	mkdir -p "$PKG"/etc/X11
+	echo 'needs_root_rights = yes' >> "$PKG"/etc/X11/Xwrapper.config
+
+	rm -f "$PKG"/usr/share/X11/xorg.conf.d/10-evdev.conf
+
+	install -m755 -d "$PKG"/var/lib/xkb
+
+	ln -sf Xorg "$PKG"/usr/bin/X
+}

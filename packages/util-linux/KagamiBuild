@@ -1,0 +1,74 @@
+# Description: Miscellaneous system utilities for Linux 
+# URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib readline pam libcap-ng systemd
+# Priority:    required
+# Section:     base
+
+name=util-linux
+version=2.35.1
+case $version in
+	*.*.*) _v=${version%.*};;
+	*.*) _v=$version;;
+esac
+release=1
+backup=('etc/pam.d/chfn'
+	'etc/pam.d/chsh'
+	'etc/pam.d/login'
+	'etc/pam.d/runuser'
+	'etc/pam.d/runuser-l'
+	'etc/pam.d/su'
+	'etc/pam.d/su-l')
+options=('bootstrap')
+source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	ADJTIME_PATH=/var/lib/hwclock/adjtime \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
+		--localstatedir=/var \
+		--with-btrfs \
+		--with-readline \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
+		--enable-chfn-chsh \
+		--enable-fs-paths-default=/usr/bin \
+		--enable-kill \
+		--enable-mesg \
+		--enable-newgrp \
+		--enable-partx \
+		--enable-pg \
+		--enable-raw \
+		--enable-rfkill \
+		--enable-tunelp \
+		--enable-usrdir-path \
+		--enable-vipw \
+		--enable-wall \
+		--enable-write \
+		--enable-zramctl
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/etc/pam.d/chfn
+	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/etc/pam.d/chsh
+	install -Dm644 "$STUFF"/pam.d/login "$PKG"/etc/pam.d/login
+	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser
+	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser-l
+	install -Dm644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su
+	install -Dm644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su-l
+
+	chmod 4755 "$PKG"/usr/bin/{newgrp,ch{sh,fn}}
+
+	cd "$PKG"
+	mkdir -p var/lib/hwclock
+
+	mv usr/sbin/* usr/bin
+	rmdir usr/sbin
+
+	if [ "$EMBEDDED" = "1" ]; then
+		rm -rf "$PKG"/usr/bin
+	fi
+}

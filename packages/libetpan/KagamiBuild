@@ -1,0 +1,25 @@
+# Description: A portable middleware for email access
+# URL:         http://www.etpan.org/libetpan.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib expat db libgcrypt gnutls
+# Section:     libs
+
+name=libetpan
+version=1.9.4
+release=1
+source=("https://github.com/dinhviethoa/libetpan/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libetpan/fix-build.patch
+
+	touch README
+	autoreconf -fi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-gnutls=yes \
+		--with-openssl=no
+	make
+	make DESTDIR="$PKG" install
+}

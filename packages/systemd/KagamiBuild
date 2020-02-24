@@ -1,0 +1,153 @@
+# Description: System and service manager
+# URL:         https://www.github.com/systemd/systemd
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson pam libcap shadow xz lz4 kmod libelf iptables gperf hwids
+# Section:     base
+
+name=systemd
+version=244.3
+release=1
+backup=('etc/systemd/coredump.conf'
+	'etc/systemd/journald.conf'
+	'etc/systemd/logind.conf'
+	'etc/systemd/networkd.conf'
+	'etc/systemd/sleep.conf'
+	'etc/systemd/system.conf'
+	'etc/systemd/timesyncd.conf'
+	'etc/systemd/user.conf'
+	'etc/udev/udev.conf')
+source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz")
+
+build() {
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		case $BARCH in
+			x86_64)
+				CPU="x86_64"
+				;;
+			i586)
+				CPU="x86"
+				;;
+			aarch64)
+				CPU="aarch64"
+				;;
+			armv7hnl|armv7hl|armv5tel)
+				CPU="arm"
+				;;
+			mips64|mips64el)
+				CPU="mips64"
+				;;
+			mips|mipsel)
+				CPU="mips"
+				;;
+			ppc64le|ppc64)
+				CPU="ppc64"
+				;;
+			ppc)
+				CPU="ppc"
+				;;
+			riscv64)
+				CPU="riscv64"
+				;;
+			riscv32)
+				CPU="riscv32"
+				;;
+			*)
+				echo "Architecture is not set or is not supported by Ataraxia Linux"
+				exit 1
+		esac
+
+		case $BARCH in
+			x86_64|i586|aarch64|armv7hnl|armv7hl|armv5tel|mips64el|mipsel|ppc64le|riscv64|riscv32)
+				ENDIAN="little"
+				;;
+			mips64|mips|ppc64|ppc)
+				ENDIAN="big"
+				;;
+			*)
+				echo "Architecture is not set or is not supported by Ataraxia Linux"
+				exit 1
+		esac
+
+		cp "$STUFF"/meson/script-cross "$TOOLS"/bin/ataraxia-meson
+
+cat > "$TOOLS/platform.txt" <<EOF
+[binaries]
+c = '$CC'
+cpp = '$CXX'
+ld = '$LD'
+ar = '$AR'
+strip = '$STRIP'
+pkgconfig = '$XTARGET-pkg-config'
+
+[host_machine]
+system = 'linux'
+cpu_family = '$CPU'
+cpu = '$CPU'
+endian = '$ENDIAN'
+EOF
+
+		sed -i "s,uncom,$TOOLS/platform.txt,g" "$TOOLS"/bin/ataraxia-meson
+
+		unset CC CXX LD AR AS STRIP PKG_CONFIG
+	fi
+
+	cd "$SRC"/$name-stable-$version
+	patch -Np1 -i "$STUFF"/systemd/0001-fix-building-on-musl-libc.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-stable-$version \
+		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
+		-Ddefault-hierarchy=hybrid \
+		-Ddefault-kill-user-processes=false \
+		-Ddefault-locale=C \
+		-Ddns-servers="1.1.1.1 1.0.0.1 9.9.9.9 8.8.8.8 8.8.4.4 2606:4700:4700::1111 2620:fe::10 2001:4860:4860::8888" \
+		-Dfallback-hostname='hidoi' \
+		-Dgnu-efi=false \
+		-Dgshadow=false \
+		-Dhtml=false \
+		-Dima=false \
+		-Dldconfig=false \
+		-Dlibidn2=false \
+		-Dlz4=true \
+		-Dman=false \
+		-Dnologin-path=/usr/bin/nologin \
+		-Dnss-myhostname=false \
+		-Dnss-mymachines=false \
+		-Dnss-resolve=false \
+		-Dnss-systemd=false \
+		-Dntp-servers="0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org" \
+		-Dresolve=false \
+		-Dsysusers=false \
+		-Dsysvinit-path= \
+		-Dsysvrcnd-path= \
+		-Dutmp=false
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	rm "$PKG"/usr/share/factory/etc/{issue,nsswitch.conf}
+	sed -i -e '/^C \/etc\/nsswitch\.conf/d' \
+		-e '/^C \/etc\/issue/d' "$PKG"/usr/lib/tmpfiles.d/etc.conf
+
+	echo 'disable *' >"$PKG"/usr/lib/systemd/system-preset/99-default.preset
+
+cat > "$PKG"/usr/lib/udev/rules.d/60-block.rules << "EOF"
+# set bfq by default
+ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="bfq"
+ACTION=="add|change", KERNEL=="nvme[0-9]", ATTR{queue/scheduler}="bfq"
+ACTION=="add|change", KERNEL=="mmcblk[0-9]", ATTR{queue/scheduler}="bfq"
+EOF
+
+	rm -rf "$PKG"/usr/lib/udev/rules.d/75-mac-spoof.rules
+cat > "$PKG"/usr/lib/udev/rules.d/75-mac-spoof.rules << "EOF"
+# spoof mac address
+ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
+EOF
+
+	install -d -o root -g 190 -m 2755 "$PKG"/var/log/journal
+	install -d -o root -g 102 -m 0750 "$PKG"/usr/share/polkit-1/rules.d
+
+	mkdir -p "$PKG"/etc/systemd/system/getty.target.wants "$PKG"/etc/systemd/system/multi-user.target.wants
+	ln -sf /usr/lib/systemd/system/getty@.service "$PKG"/etc/systemd/system/getty.target.wants/getty@tty1.service
+	ln -sf /usr/lib/systemd/system/remote-fs.target "$PKG"/etc/systemd/system/multi-user.target.wants/remote-fs.target
+}

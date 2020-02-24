@@ -1,0 +1,35 @@
+# Description: Application development toolkit for controlling system-wide privileges
+# URL:         https://www.freedesktop.org/wiki/Software/polkit/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam systemd intltool gobject-introspection spidermonkey
+# Section:     utils
+
+name=polkit
+version=0.116
+release=4
+source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/polkit/make-innetgr-optional.patch
+	autoreconf -fi
+
+	sed -i "s:/sys/fs/cgroup/systemd/:/sys:g" configure
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-authfw=pam \
+		--with-os-type=pardus \
+		--disable-man-pages \
+		--disable-nls \
+		--disable-static
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make dbusconfdir=/usr/share/dbus-1/system.d rulesdir=/usr/share/polkit-1/rules.d DESTDIR="$PKG" install
+
+	install -d -o root -g 102 -m 750 "$PKG"/{etc,usr/share}/polkit-1/rules.d
+}

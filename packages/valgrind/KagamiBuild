@@ -1,0 +1,32 @@
+# Description: Tool to help find memory-management problems in programs
+# URL:         http://valgrind.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl
+# Section:     devel
+
+name=valgrind
+version=3.15.0
+release=2
+options=('~emptydirs' '~strip')
+source=("https://sourceware.org/ftp/$name/$name-$version.tar.bz2")
+
+build() {
+	export CFLAGS="$CFLAGS -fno-stack-protector -no-pie"
+	export CXXFLAGS="$CXXFLAGS -fno-stack-protector -no-pie"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/valgrind/elfv2-ppc64-be.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--mandir=/usr/share/man \
+		--without-mpicc \
+		--enable-tls
+	make
+	make DESTDIR="$PKG" install
+
+	find "$PKG"/usr/bin -type f -executable -exec strip --strip-all {} + || true
+}

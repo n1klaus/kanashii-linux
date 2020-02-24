@@ -1,0 +1,32 @@
+# Description: A library which provides a secure layer over a reliable transport layer
+# URL:         https://www.gnutls.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib readline libunistring libidn2 nettle libtasn1 p11-kit
+# Section:     libs
+
+name=gnutls
+version=3.6.12
+case $version in
+	*.*.*.*) _v=${version%.*}
+		_v=${_v%.*};;
+	*.*.*) _v=${version%.*};;
+esac
+release=1
+source=("https://www.gnupg.org/ftp/gcrypt/$name/v${_v}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-default-trust-store-pkcs11="pkcs11:model=p11-kit-trust;manufacturer=PKCS%2311%20Kit" \
+		--with-idn \
+		--with-zlib \
+		--disable-guile \
+		--disable-nls \
+		--disable-rpath \
+		--disable-static
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

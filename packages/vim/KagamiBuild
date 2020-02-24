@@ -1,0 +1,28 @@
+# Description: Vi Improved, a highly configurable, improved version of the vi text editor
+# URL:         https://www.vim.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses acl pcre
+# Section:     editors
+
+name=vim
+version=8.2.0292
+release=1
+source=("https://github.com/vim/vim/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/vim-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--localstatedir=/var/lib/vim \
+		--with-compiledby='Ataraxia Linux' \
+		--with-features=huge \
+		--with-tlib=ncursesw \
+		--without-x \
+		--enable-multibyte \
+		--disable-nls \
+		--disable-gui
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf vim "$PKG"/usr/bin/vi
+}

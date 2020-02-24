@@ -1,0 +1,23 @@
+# Description: GNU make utility to maintain groups of programs
+# URL:         http://www.gnu.org/software/make
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     devel
+
+name=make
+version=4.3
+release=1
+options=('bootstrap')
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-guile \
+		--without-dmalloc
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf make "$PKG"/usr/bin/gmake
+}

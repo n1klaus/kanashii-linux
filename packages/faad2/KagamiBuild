@@ -1,0 +1,20 @@
+# Description: ISO AAC audio decoder
+# URL:         http://faac.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     audio
+
+name=faad2
+version=2.9.1
+release=1
+options=('~makeflags')
+source=("https://github.com/knik0/faad2/archive/${version//./_}.tar.gz")
+
+build() {
+	cd "$SRC"/faad2-${version//./_}
+	autoreconf -vfi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
